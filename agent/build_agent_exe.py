@@ -36,7 +36,7 @@ def build_exe():
 
     print(f"[+] Compiling standalone executable from: {agent_script}")
     subprocess.run(cmd, check=True)
-    print(f"\n[✓] Executable built successfully at: {os.path.join(output_dir, 'ApexPulseAgent', 'ApexPulseAgent.exe')}")
+    print(f"\n[+] Executable built successfully at: {os.path.join(output_dir, 'ApexPulseAgent', 'ApexPulseAgent.exe')}")
 
 if __name__ == "__main__":
     build_exe()

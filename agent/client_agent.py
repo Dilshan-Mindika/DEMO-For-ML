@@ -208,7 +208,7 @@ def send_telemetry(server_url: str):
     try:
         resp = requests.post(target_endpoint, json=payload, timeout=10)
         if resp.status_code == 200:
-            print("[✓] Telemetry successfully posted to central server!")
+            print("[+] Telemetry successfully posted to central server!")
             print(json.dumps(resp.json(), indent=2))
         else:
             print(f"[!] HTTP Error {resp.status_code}: {resp.text}")

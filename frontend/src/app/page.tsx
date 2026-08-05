@@ -24,7 +24,8 @@ import {
   Sun,
   Moon,
   Sliders,
-  BarChart3
+  BarChart3,
+  Monitor
 } from "lucide-react";
 import { authenticateUser, UserAccount } from "./auth";
 
@@ -497,11 +498,11 @@ export default function DashboardPage() {
                 className="bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] px-4 py-2.5 rounded-full text-xs font-semibold focus:outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer"
               >
                 <option value="local" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>
-                  📍 Local Host ({telemetry?.device_name || "Device"})
+                  Local Host ({telemetry?.device_name || "Device"})
                 </option>
                 {devicesList.map((d) => (
                   <option key={d.device_id} value={d.device_id} className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>
-                    💻 {d.device_name} ({d.device_model})
+                    {d.device_name} ({d.device_model})
                   </option>
                 ))}
               </select>

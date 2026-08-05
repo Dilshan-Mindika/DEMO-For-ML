@@ -10,7 +10,7 @@
 
 ---
 
-## 🔐 Enterprise Admin Login Credentials (5 Accounts)
+## Enterprise Admin Login Credentials (5 Accounts)
 
 The dashboard includes a glassmorphic authentication system supporting 5 hardcoded administrator accounts:
 
@@ -24,7 +24,7 @@ The dashboard includes a glassmorphic authentication system supporting 5 hardcod
 
 ---
 
-## 🏗️ Industrial Project Structure
+## Industrial Project Structure
 
 The project strictly follows industrial repository standards:
 
@@ -66,7 +66,7 @@ DEMO For ML/
 
 ---
 
-## ⚡ Key Features
+## Key Features
 
 ### 1. 1-Click Double-Click Client Agent Installation
 Target employee laptops can be configured in seconds without running PowerShell commands:
@@ -84,7 +84,7 @@ Target employee laptops can be configured in seconds without running PowerShell 
 
 ---
 
-## 🛠️ Quick Start Guide
+## Quick Start Guide
 
 ### Step 1: Start Backend API (Port 5000)
 ```powershell
