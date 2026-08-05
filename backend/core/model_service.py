@@ -1,8 +1,14 @@
 import os
+import sys
+import warnings
 import joblib
 import pandas as pd
 from datetime import datetime
 from typing import Dict, Any, Tuple
+
+# Suppress non-critical version mismatch warnings during unpickling
+warnings.filterwarnings("ignore", category=UserWarning)
+warnings.filterwarnings("ignore", message=".*InconsistentVersionWarning.*")
 
 # Backwards-compatibility shim for unpickling scikit-learn pipeline objects
 try:
@@ -39,7 +45,9 @@ class LifecyclePredictor:
             raise FileNotFoundError(f"Trained XGBoost model file not found at: {self.model_path}")
 
         try:
-            self.model = joblib.load(self.model_path)
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                self.model = joblib.load(self.model_path)
         except Exception as e:
             raise RuntimeError(f"Failed to load model from {self.model_path}: {str(e)}")
 
@@ -59,9 +67,11 @@ class LifecyclePredictor:
             self.load_model()
 
         df = self.prepare_dataframe(ml_input)
-        raw_pred = self.model.predict(df)[0]
-        rul_months = round(float(raw_pred), 2)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            raw_pred = self.model.predict(df)[0]
 
+        rul_months = round(float(raw_pred), 2)
         recommendation, status_level, status_color = self.get_recommendation(rul_months)
 
         return PredictionResult(

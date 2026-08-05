@@ -1,5 +1,9 @@
 import os
 import sys
+import warnings
+
+# Suppress non-critical library warnings
+warnings.filterwarnings("ignore")
 
 # Ensure project root is in sys.path when running `python backend/app.py` directly
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -112,5 +116,8 @@ def simulate_maintenance():
 
 
 if __name__ == "__main__":
-    print("[+] Starting Enterprise Laptop Lifecycle API on http://127.0.0.1:5000")
-    app.run(host="127.0.0.1", port=5000, debug=True)
+    print("=" * 60)
+    print("  APEXPULSE: Enterprise Laptop Lifecycle & RUL Prediction API")
+    print("  Status: Active & Listening on http://127.0.0.1:5000")
+    print("=" * 60)
+    app.run(host="127.0.0.1", port=5000, debug=False)
