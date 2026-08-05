@@ -15,8 +15,9 @@ import {
   Clock,
   Sparkles,
   Laptop,
-  CheckCircle,
-  Server
+  Server,
+  Users,
+  ChevronDown
 } from "lucide-react";
 
 interface TelemetryData {
@@ -65,22 +66,57 @@ interface PredictionResult {
   timestamp: string;
 }
 
-interface ApiResponse {
-  telemetry: TelemetryData;
-  prediction: PredictionResult;
-  error?: string;
+interface DeviceSummary {
+  device_id: string;
+  device_name: string;
+  device_model: string;
+  manufacturer: string;
+  serial_number: string;
+  last_seen: string;
+  rul_months: number;
+  recommendation: string;
+  status_level: string;
+  status_color: string;
+  battery_health: number;
+  ssd_health: number;
+  edhi: number;
+}
+
+interface FleetSummary {
+  total_devices: number;
+  healthy_count: number;
+  monitor_count: number;
+  replacement_count: number;
+  avg_rul_months: number;
+  avg_edhi: number;
 }
 
 const API_BASE_URL = "http://127.0.0.1:5000";
 
 export default function DashboardPage() {
-  const [data, setData] = useState<ApiResponse | null>(null);
+  const [data, setData] = useState<{ telemetry: TelemetryData; prediction: PredictionResult } | null>(null);
+  const [fleetSummary, setFleetSummary] = useState<FleetSummary | null>(null);
+  const [devicesList, setDevicesList] = useState<DeviceSummary[]>([]);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
+
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Manual inputs for age & daily usage
   const [manualAge, setManualAge] = useState<number>(24);
   const [dailyUsage, setDailyUsage] = useState<number>(6.5);
+
+  const fetchFleet = async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/devices`);
+      if (res.ok) {
+        const json = await res.json();
+        setFleetSummary(json.summary);
+        setDevicesList(json.devices);
+      }
+    } catch (e) {
+      console.error("Fleet fetch error:", e);
+    }
+  };
 
   const fetchPrediction = async (age = manualAge, usage = dailyUsage) => {
     setLoading(true);
@@ -92,19 +128,31 @@ export default function DashboardPage() {
         body: JSON.stringify({ age, daily_usage: usage }),
       });
 
-      if (!res.ok) {
-        throw new Error(`Backend API Error: ${res.statusText}`);
-      }
+      if (!res.ok) throw new Error(`Backend API Error: ${res.statusText}`);
 
-      const json: ApiResponse = await res.json();
-      if (json.error) {
-        throw new Error(json.error);
-      }
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
 
-      setData(json);
+      setData({ telemetry: json.telemetry, prediction: json.prediction });
+      fetchFleet();
     } catch (err: any) {
       console.error(err);
       setError(err.message || "Failed to connect to backend server.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectDevice = async (deviceId: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/devices/${deviceId}`);
+      if (!res.ok) throw new Error("Device details fetch failed");
+      const json = await res.json();
+      setData({ telemetry: json.telemetry, prediction: json.prediction });
+      setSelectedDeviceId(deviceId);
+    } catch (err: any) {
+      alert(`Device Selection Error: ${err.message}`);
     } finally {
       setLoading(false);
     }
@@ -193,7 +241,7 @@ export default function DashboardPage() {
             <div>
               <h2 className="font-bold text-lg leading-tight font-outfit">ApexPulse</h2>
               <span className="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">
-                Lifecycle AI
+                Enterprise Fleet AI
               </span>
             </div>
           </div>
@@ -204,7 +252,7 @@ export default function DashboardPage() {
               className="flex items-center gap-3 px-4 py-3 text-white bg-blue-500/10 border-l-4 border-blue-500 rounded-lg text-sm font-medium"
             >
               <Activity className="w-4 h-4 text-blue-400" />
-              Overview
+              Fleet Overview
             </a>
           </nav>
         </div>
@@ -213,8 +261,8 @@ export default function DashboardPage() {
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-md shadow-emerald-400/50" />
             <div>
-              <strong className="block text-xs font-semibold">AI Agent System</strong>
-              <small className="text-[11px] text-gray-400">Monitoring Active</small>
+              <strong className="block text-xs font-semibold">Fleet Collector API</strong>
+              <small className="text-[11px] text-gray-400">Listening on :5000</small>
             </div>
           </div>
         </div>
@@ -226,17 +274,33 @@ export default function DashboardPage() {
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
             <h1 className="text-2xl md:text-3xl font-bold font-outfit">
-              Enterprise Laptop Lifecycle Prediction
+              Enterprise Laptop Fleet Dashboard
             </h1>
             <p className="text-sm text-gray-400 mt-1">
-              Real-time hardware telemetry & XGBoost Remaining Useful Life (RUL) inference
+              Multi-device hardware telemetry monitoring & XGBoost RUL predictive maintenance
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="bg-white/5 border border-white/10 px-4 py-2.5 rounded-full text-xs font-semibold flex items-center gap-2 text-blue-400">
-              <Laptop className="w-4 h-4" />
-              <span>{telemetry?.device_model || "Detecting Hardware..."}</span>
+          <div className="flex items-center gap-4 flex-wrap">
+            {/* Device Selector */}
+            <div className="relative">
+              <select
+                onChange={(e) => {
+                  if (e.target.value === "local") fetchPrediction();
+                  else selectDevice(e.target.value);
+                }}
+                className="bg-white/5 border border-white/10 px-4 py-2.5 rounded-full text-xs font-semibold text-white focus:outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer"
+              >
+                <option value="local" className="bg-[#0F172A] text-white">
+                  📍 Local Host ({telemetry?.device_name || "Device"})
+                </option>
+                {devicesList.map((d) => (
+                  <option key={d.device_id} value={d.device_id} className="bg-[#0F172A] text-white">
+                    💻 {d.device_name} ({d.device_model})
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-3 top-3.5 pointer-events-none" />
             </div>
 
             <button
@@ -262,7 +326,52 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Dashboard Grid */}
+        {/* Fleet Summary Banner */}
+        {fleetSummary && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+            <div className="glass-card p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center">
+                <Users className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[11px] text-gray-400 uppercase font-semibold block">Monitored Laptops</span>
+                <strong className="text-xl font-bold font-outfit">{fleetSummary.total_devices}</strong>
+              </div>
+            </div>
+
+            <div className="glass-card p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+                <ShieldCheck className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[11px] text-gray-400 uppercase font-semibold block">Healthy Fleet</span>
+                <strong className="text-xl font-bold font-outfit text-emerald-400">{fleetSummary.healthy_count}</strong>
+              </div>
+            </div>
+
+            <div className="glass-card p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center">
+                <Clock className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[11px] text-gray-400 uppercase font-semibold block">Monitor Devices</span>
+                <strong className="text-xl font-bold font-outfit text-amber-400">{fleetSummary.monitor_count}</strong>
+              </div>
+            </div>
+
+            <div className="glass-card p-4 flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <span className="text-[11px] text-gray-400 uppercase font-semibold block">Action Required</span>
+                <strong className="text-xl font-bold font-outfit text-rose-400">{fleetSummary.replacement_count}</strong>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Main Dashboard Grid */}
         <div className="grid grid-cols-12 gap-6">
           {/* Hero RUL Banner */}
           <section className="col-span-12 glass-card p-6 md:p-8 relative overflow-hidden">
@@ -271,7 +380,7 @@ export default function DashboardPage() {
                 <Sparkles className="w-3.5 h-3.5" /> XGBoost RUL Forecast
               </span>
               <span className="text-xs text-gray-400">
-                Updated: {prediction ? new Date(prediction.timestamp).toLocaleTimeString() : "--"}
+                Host: <strong>{telemetry?.device_name || "--"}</strong> • Updated: {prediction ? new Date(prediction.timestamp).toLocaleTimeString() : "--"}
               </span>
             </div>
 
@@ -322,7 +431,6 @@ export default function DashboardPage() {
                 </span>
               </div>
 
-              {/* Interactive Age & Usage Controls */}
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-2">
                   <span className="text-gray-400">Device Age (Months):</span>
@@ -358,34 +466,27 @@ export default function DashboardPage() {
 
           {/* Metrics Grid */}
           <div className="col-span-12 lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Battery Health */}
             <div className="glass-card p-5 flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center flex-shrink-0">
                 <Battery className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-xs text-gray-400 uppercase font-semibold block">
-                  Battery Health
-                </span>
+                <span className="text-xs text-gray-400 uppercase font-semibold block">Battery Health</span>
                 <h2 className="text-2xl font-bold font-outfit mt-0.5">
                   {mlInput ? `${mlInput.battery_health.toFixed(1)}%` : "--%"}
                 </h2>
                 <div className="text-xs text-gray-500 mt-1">
-                  {mlInput ? `${mlInput.battery_cycles} Cycles` : "--"} •{" "}
-                  {telemetry?.power_plugged ? "AC Plugged" : "On Battery"}
+                  {mlInput ? `${mlInput.battery_cycles} Cycles` : "--"} • {telemetry?.power_plugged ? "AC Plugged" : "On Battery"}
                 </div>
               </div>
             </div>
 
-            {/* SSD Health */}
             <div className="glass-card p-5 flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center flex-shrink-0">
                 <HardDrive className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-xs text-gray-400 uppercase font-semibold block">
-                  SSD Health
-                </span>
+                <span className="text-xs text-gray-400 uppercase font-semibold block">SSD Health</span>
                 <h2 className="text-2xl font-bold font-outfit mt-0.5">
                   {mlInput ? `${mlInput.ssd_health.toFixed(1)}%` : "--%"}
                 </h2>
@@ -393,31 +494,25 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Avg Temperature */}
             <div className="glass-card p-5 flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center flex-shrink-0">
                 <Thermometer className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-xs text-gray-400 uppercase font-semibold block">
-                  Avg CPU Temp
-                </span>
+                <span className="text-xs text-gray-400 uppercase font-semibold block">Avg CPU Temp</span>
                 <h2 className="text-2xl font-bold font-outfit mt-0.5">
                   {mlInput ? `${mlInput.temperature.toFixed(1)} °C` : "-- °C"}
                 </h2>
-                <div className="text-xs text-gray-500 mt-1">LibreHardwareMonitor Sensor</div>
+                <div className="text-xs text-gray-500 mt-1">Thermal Monitoring Sensor</div>
               </div>
             </div>
 
-            {/* Shutdown Count */}
             <div className="glass-card p-5 flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center flex-shrink-0">
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <span className="text-xs text-gray-400 uppercase font-semibold block">
-                  Shutdowns (30d)
-                </span>
+                <span className="text-xs text-gray-400 uppercase font-semibold block">Shutdowns (30d)</span>
                 <h2 className="text-2xl font-bold font-outfit mt-0.5">
                   {mlInput ? mlInput.shutdown_count : "--"}
                 </h2>
@@ -433,42 +528,26 @@ export default function DashboardPage() {
             </h3>
 
             <div className="space-y-6">
-              {/* Performance Score */}
               <div>
                 <div className="flex justify-between text-xs font-semibold mb-1.5">
                   <span>Performance Score</span>
-                  <span className="text-blue-400">
-                    {mlInput ? `${mlInput.performance_score.toFixed(1)} / 100` : "--"}
-                  </span>
+                  <span className="text-blue-400">{mlInput ? `${mlInput.performance_score.toFixed(1)} / 100` : "--"}</span>
                 </div>
                 <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700"
-                    style={{ width: `${mlInput?.performance_score || 0}%` }}
-                  />
+                  <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700" style={{ width: `${mlInput?.performance_score || 0}%` }} />
                 </div>
-                <small className="text-[11px] text-gray-500 mt-1 block">
-                  CPU, RAM & Disk Load Contention
-                </small>
+                <small className="text-[11px] text-gray-500 mt-1 block">CPU, RAM & Disk Load Contention</small>
               </div>
 
-              {/* EDHI Score */}
               <div>
                 <div className="flex justify-between text-xs font-semibold mb-1.5">
                   <span>Enterprise Device Health Index (EDHI)</span>
-                  <span className="text-emerald-400">
-                    {mlInput ? `${mlInput.edhi.toFixed(1)} / 100` : "--"}
-                  </span>
+                  <span className="text-emerald-400">{mlInput ? `${mlInput.edhi.toFixed(1)} / 100` : "--"}</span>
                 </div>
                 <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all duration-700"
-                    style={{ width: `${mlInput?.edhi || 0}%` }}
-                  />
+                  <div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all duration-700" style={{ width: `${mlInput?.edhi || 0}%` }} />
                 </div>
-                <small className="text-[11px] text-gray-500 mt-1 block">
-                  Multi-Factor Holistic Integrity
-                </small>
+                <small className="text-[11px] text-gray-500 mt-1 block">Multi-Factor Holistic Integrity</small>
               </div>
             </div>
           </section>
@@ -485,11 +564,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button
-                onClick={() => triggerMaintenance("replace_battery")}
-                disabled={loading}
-                className="bg-white/5 hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/40 p-4 rounded-xl text-left transition-all flex items-center gap-4 group"
-              >
+              <button onClick={() => triggerMaintenance("replace_battery")} disabled={loading} className="bg-white/5 hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/40 p-4 rounded-xl text-left transition-all flex items-center gap-4 group">
                 <Battery className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform" />
                 <div>
                   <strong className="block text-sm">Replace Battery</strong>
@@ -497,11 +572,7 @@ export default function DashboardPage() {
                 </div>
               </button>
 
-              <button
-                onClick={() => triggerMaintenance("replace_ssd")}
-                disabled={loading}
-                className="bg-white/5 hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/40 p-4 rounded-xl text-left transition-all flex items-center gap-4 group"
-              >
+              <button onClick={() => triggerMaintenance("replace_ssd")} disabled={loading} className="bg-white/5 hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/40 p-4 rounded-xl text-left transition-all flex items-center gap-4 group">
                 <HardDrive className="w-6 h-6 text-blue-400 group-hover:scale-110 transition-transform" />
                 <div>
                   <strong className="block text-sm">Replace SSD</strong>
@@ -509,11 +580,7 @@ export default function DashboardPage() {
                 </div>
               </button>
 
-              <button
-                onClick={() => triggerMaintenance("full_overhaul")}
-                disabled={loading}
-                className="bg-gradient-to-br from-indigo-600/30 to-emerald-600/30 border border-indigo-500/40 hover:border-indigo-400 p-4 rounded-xl text-left transition-all flex items-center gap-4 group"
-              >
+              <button onClick={() => triggerMaintenance("full_overhaul")} disabled={loading} className="bg-gradient-to-br from-indigo-600/30 to-emerald-600/30 border border-indigo-500/40 hover:border-indigo-400 p-4 rounded-xl text-left transition-all flex items-center gap-4 group">
                 <Sparkles className="w-6 h-6 text-indigo-300 group-hover:scale-110 transition-transform" />
                 <div>
                   <strong className="block text-sm text-white">Full Refurbish</strong>
@@ -522,6 +589,51 @@ export default function DashboardPage() {
               </button>
             </div>
           </section>
+
+          {/* Fleet Inventory Table */}
+          {devicesList.length > 0 && (
+            <section className="col-span-12 glass-card p-6">
+              <h3 className="font-bold text-base font-outfit flex items-center gap-2 mb-4">
+                <Users className="w-5 h-5 text-blue-400" /> Monitored Fleet Inventory
+              </h3>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-white/10 text-gray-400">
+                      <th className="py-3 px-4">Device Hostname</th>
+                      <th className="py-3 px-4">Model & Serial</th>
+                      <th className="py-3 px-4">RUL Forecast</th>
+                      <th className="py-3 px-4">Status</th>
+                      <th className="py-3 px-4">Battery Health</th>
+                      <th className="py-3 px-4">EDHI</th>
+                      <th className="py-3 px-4">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {devicesList.map((dev) => (
+                      <tr key={dev.device_id} className="hover:bg-white/[0.02]">
+                        <td className="py-3 px-4 font-semibold text-white">{dev.device_name}</td>
+                        <td className="py-3 px-4 text-gray-400">{dev.device_model} ({dev.serial_number})</td>
+                        <td className="py-3 px-4 font-bold text-blue-400">{dev.rul_months.toFixed(1)} Months</td>
+                        <td className="py-3 px-4 font-semibold" style={{ color: dev.status_color }}>{dev.recommendation}</td>
+                        <td className="py-3 px-4 font-mono">{dev.battery_health.toFixed(1)}%</td>
+                        <td className="py-3 px-4 font-mono text-emerald-400">{dev.edhi.toFixed(1)}</td>
+                        <td className="py-3 px-4">
+                          <button
+                            onClick={() => selectDevice(dev.device_id)}
+                            className="bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 px-3 py-1 rounded-lg text-[11px] font-semibold"
+                          >
+                            Inspect Telemetry
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
 
           {/* Feature Matrix Table */}
           <section className="col-span-12 glass-card p-6">

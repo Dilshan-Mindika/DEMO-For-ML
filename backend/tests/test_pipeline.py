@@ -11,6 +11,7 @@ from backend.core.collector import HardwareCollector
 from backend.core.agent import DeviceHealthAgent
 from backend.core.model_service import LifecyclePredictor
 from backend.core.component_manager import ComponentMaintenanceManager
+from backend.core.fleet_manager import FleetManager
 from backend.models.telemetry_schema import TelemetryData, MLInputSchema
 
 
@@ -20,6 +21,7 @@ class TestEnterprisePipeline(unittest.TestCase):
         self.collector = HardwareCollector()
         self.agent = DeviceHealthAgent()
         self.maintenance_mgr = ComponentMaintenanceManager()
+        self.fleet_mgr = FleetManager()
 
     def test_hardware_collector_non_blocking(self):
         telemetry = self.collector.collect_all()
@@ -65,7 +67,22 @@ class TestEnterprisePipeline(unittest.TestCase):
         updated = self.maintenance_mgr.replace_battery(initial_input)
         self.assertEqual(updated.battery_health, 100.0)
         self.assertEqual(updated.battery_cycles, 0)
-        self.assertEqual(updated.age, 24.0)  # History preserved!
+        self.assertEqual(updated.age, 24.0)
+
+    def test_fleet_manager_registration(self):
+        telemetry = self.collector.collect_all()
+        ml_in = self.agent.process_telemetry(telemetry)
+        predictor = LifecyclePredictor()
+        pred = predictor.predict(ml_in)
+
+        rec = self.fleet_mgr.register_or_update(telemetry, pred)
+        self.assertIsNotNone(rec["device_id"])
+        
+        all_devs = self.fleet_mgr.get_all_devices()
+        self.assertGreaterEqual(len(all_devs), 1)
+
+        summary = self.fleet_mgr.get_fleet_summary()
+        self.assertGreaterEqual(summary["total_devices"], 1)
 
 
 if __name__ == "__main__":
