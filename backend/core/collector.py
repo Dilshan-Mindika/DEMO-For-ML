@@ -6,6 +6,7 @@ import psutil
 import platform
 import requests
 import subprocess
+import tempfile
 from datetime import datetime
 from typing import Dict, Any, Optional, List
 
@@ -97,17 +98,19 @@ class HardwareCollector:
             return 24.0
 
     def get_battery_wear(self) -> Dict[str, Any]:
-        """Runs powercfg /batteryreport and extracts capacity metrics."""
+        """Runs powercfg /batteryreport and extracts capacity metrics into temp directory."""
         result = {
             "design_capacity_mwh": None,
             "full_charge_capacity_mwh": None,
             "battery_health": DEFAULT_BATTERY_HEALTH,
             "battery_wear": 0.0,
-            "battery_cycles": 150  # Default reasonable cycle count estimation if unreadable
+            "battery_cycles": 150
         }
 
         try:
-            report_path = os.path.join(os.getcwd(), "battery-report.html")
+            temp_dir = tempfile.gettempdir()
+            report_path = os.path.join(temp_dir, "apex_battery_report.html")
+
             subprocess.run(
                 ["powercfg", "/batteryreport", "/output", report_path],
                 shell=True,

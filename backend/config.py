@@ -1,7 +1,7 @@
 import os
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-MODEL_PATH = os.path.join(BASE_DIR, "xgboost_rul_model.pkl")
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "models", "xgboost_rul_model.pkl")
 LHM_URL = "http://127.0.0.1:8085/data.json"
 LHM_DIR = os.path.join(BASE_DIR, "LibreHardwareMonitor-net472")
 LHM_EXE = os.path.join(LHM_DIR, "LibreHardwareMonitor.exe")

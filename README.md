@@ -1,4 +1,4 @@
-# ApexPulse: Enterprise Laptop Lifecycle & RUL Prediction Dashboard
+# ApexPulse: Enterprise Laptop Lifecycle & RUL Prediction System
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 [![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
@@ -10,37 +10,38 @@
 
 ---
 
-## 🏗️ Project Architecture & Directory Structure
+## 🏗️ Industrial Project Structure
 
-The repository is organized into **two primary top-level folders**:
+The project strictly follows industrial repository standards with **two primary folders** (`backend/` and `frontend/`) and top-level documentation:
 
 ```
 DEMO For ML/
-├── backend/                  # Python Flask REST API & OOP Core Intelligence
-│   ├── app.py                # Flask REST API endpoints (CORS enabled on port 5000)
-│   ├── config.py             # Global configuration, fallback defaults, and RUL thresholds
-│   ├── models/
-│   │   └── telemetry_schema.py # Dataclasses for Telemetry, ML Payload, & Predictions
-│   ├── core/
-│   │   ├── collector.py      # HardwareCollector OOP (WMI, psutil, PowerCfg, Event Logs, LHM)
-│   │   ├── agent.py          # DeviceHealthAgent OOP (Usage Profile, Performance, EDHI)
-│   │   ├── model_service.py  # LifecyclePredictor OOP (XGBoost RUL Model Inference)
-│   │   └── component_manager.py # ComponentMaintenanceManager (Battery/SSD replacement resets)
-│   └── tests/
-│       └── test_pipeline.py  # Automated Unit Test Suite
+├── backend/                     # Python REST API & Core ML Intelligence
+│   ├── app.py                   # Flask REST API server (CORS enabled on port 5000)
+│   ├── config.py                # Configuration paths, fallback parameters, & RUL thresholds
+│   ├── models/                  # Dataclasses & Trained ML Artifacts
+│   │   ├── telemetry_schema.py  # TelemetryData, MLInputSchema, PredictionResult dataclasses
+│   │   └── xgboost_rul_model.pkl # Trained XGBoost RUL Prediction Model Pipeline
+│   ├── core/                    # OOP Intelligence Modules
+│   │   ├── collector.py         # HardwareCollector (WMI, psutil, PowerCfg, Event Logs, LHM)
+│   │   ├── agent.py             # DeviceHealthAgent (Usage Profile, Performance Score, EDHI)
+│   │   ├── model_service.py     # LifecyclePredictor (XGBoost RUL Model Inference)
+│   │   └── component_manager.py # ComponentMaintenanceManager (Battery & SSD replacements)
+│   ├── tests/                   # Automated Unit Test Suite
+│   │   └── test_pipeline.py     # Pipeline Unit Tests
+│   └── LibreHardwareMonitor-net472/ # Windows Sensor Service
 │
-├── frontend/                 # Next.js 15 Web Dashboard Application
+├── frontend/                    # Next.js 15 Web Dashboard Application
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── page.tsx      # Main Dashboard Component (React, Lucide Icons, Glassmorphism)
-│   │   │   ├── layout.tsx    # Root layout with Inter & Outfit fonts
-│   │   │   └── globals.css   # Dark theme Tailwind styling & glassmorphism tokens
-│   │   └── package.json      # Node dependencies (Next.js, React, TailwindCSS, Lucide)
+│   │   │   ├── page.tsx         # Main Dashboard Component (React, Lucide Icons)
+│   │   │   ├── layout.tsx       # Root layout with Inter & Outfit fonts
+│   │   │   └── globals.css      # Dark theme Tailwind styling & glassmorphism tokens
+│   │   └── package.json         # Node dependencies (Next.js, React, Tailwind, Lucide)
 │   └── ...
 │
-├── xgboost_rul_model.pkl     # Trained Scikit-Learn + XGBoost RUL Prediction Pipeline
-├── LibreHardwareMonitor-net472/ # Windows Sensor Web API Server (HTTP 127.0.0.1:8085)
-└── README.md                 # System Documentation
+├── .gitignore                   # Workspace Git Ignore Rules
+└── README.md                    # System Documentation
 ```
 
 ---
