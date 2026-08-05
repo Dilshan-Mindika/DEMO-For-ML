@@ -6,39 +6,59 @@
 [![XGBoost](https://img.shields.io/badge/Model-XGBoost%20ML-orange.svg)](https://xgboost.readthedocs.io/)
 [![License](https://img.shields.io/badge/License-Enterprise-emerald.svg)]()
 
-> **ApexPulse** is an end-to-end Enterprise Laptop Predictive Maintenance and Remaining Useful Life (RUL) forecasting platform. It combines automated Windows hardware telemetry collection, an AI Health Scoring Agent, XGBoost machine learning pipeline inference, component-level maintenance simulation, and a modern glassmorphic Next.js web dashboard.
+> **ApexPulse** is an end-to-end Enterprise Laptop Predictive Maintenance and Remaining Useful Life (RUL) forecasting platform. It combines automated Windows hardware telemetry collection, an AI Health Scoring Agent, XGBoost machine learning pipeline inference, component-level maintenance simulation, and a modern glassmorphic Next.js web dashboard with multi-user static admin authentication.
+
+---
+
+## 🔐 Enterprise Admin Login Credentials (5 Static Accounts)
+
+The dashboard includes a glassmorphic authentication system supporting 5 hardcoded enterprise administrator accounts:
+
+| Administrator Email | Password | Name | Role |
+| :--- | :--- | :--- | :--- |
+| `admin@apex.com` | `admin123` | **Alex Mercer** | Lead IT Administrator |
+| `sysadmin@apex.com` | `sysadmin123` | **Sarah Chen** | System Administrator |
+| `security@apex.com` | `security123` | **Marcus Vance** | Security Operations |
+| `manager@apex.com` | `manager123` | **Elena Rostova** | IT Fleet Manager |
+| `support@apex.com` | `support123` | **David Kim** | IT Helpdesk Specialist |
 
 ---
 
 ## 🏗️ Industrial Project Structure
 
-The project strictly follows industrial repository standards with **two primary folders** (`backend/` and `frontend/`) and top-level documentation:
+The project strictly follows industrial repository standards:
 
 ```
 DEMO For ML/
 ├── backend/                     # Python REST API & Core ML Intelligence
 │   ├── app.py                   # Flask REST API server (CORS enabled on port 5000)
-│   ├── config.py                # Configuration paths, fallback parameters, & RUL thresholds
+│   ├── config.py                # Configuration paths & RUL thresholds
 │   ├── models/                  # Dataclasses & Trained ML Artifacts
-│   │   ├── telemetry_schema.py  # TelemetryData, MLInputSchema, PredictionResult dataclasses
+│   │   ├── telemetry_schema.py  # TelemetryData, MLInputSchema, PredictionResult
 │   │   └── xgboost_rul_model.pkl # Trained XGBoost RUL Prediction Model Pipeline
 │   ├── core/                    # OOP Intelligence Modules
 │   │   ├── collector.py         # HardwareCollector (WMI, psutil, PowerCfg, Event Logs, LHM)
 │   │   ├── agent.py             # DeviceHealthAgent (Usage Profile, Performance Score, EDHI)
 │   │   ├── model_service.py     # LifecyclePredictor (XGBoost RUL Model Inference)
-│   │   └── component_manager.py # ComponentMaintenanceManager (Battery & SSD replacements)
-│   ├── tests/                   # Automated Unit Test Suite
-│   │   └── test_pipeline.py     # Pipeline Unit Tests
-│   └── LibreHardwareMonitor-net472/ # Windows Sensor Service
+│   │   ├── component_manager.py # ComponentMaintenanceManager (Battery & SSD replacements)
+│   │   └── fleet_manager.py     # FleetManager (Multi-Device Inventory Tracking)
+│   └── tests/                   # Automated Unit Test Suite
+│       └── test_pipeline.py     # Pipeline Unit Tests
 │
 ├── frontend/                    # Next.js 15 Web Dashboard Application
 │   ├── src/
 │   │   ├── app/
-│   │   │   ├── page.tsx         # Main Dashboard Component (React, Lucide Icons)
-│   │   │   ├── layout.tsx       # Root layout with Inter & Outfit fonts
+│   │   │   ├── page.tsx         # Main Dashboard & Login View (React, TypeScript)
+│   │   │   ├── auth.ts          # Static 5-User Admin Authentication Module
+│   │   │   ├── layout.tsx       # Root layout with fonts
 │   │   │   └── globals.css      # Dark theme Tailwind styling & glassmorphism tokens
-│   │   └── package.json         # Node dependencies (Next.js, React, Tailwind, Lucide)
+│   │   └── package.json         # Node dependencies
 │   └── ...
+│
+├── agent/                       # Client Agent & 1-Click Installer Package
+│   ├── client_agent.py          # Standalone Python telemetry agent
+│   ├── Install_ApexPulse_Agent.bat # Double-clickable 1-Click Windows Startup Installer
+│   └── build_agent_exe.py       # PyInstaller standalone EXE compiler
 │
 ├── .gitignore                   # Workspace Git Ignore Rules
 └── README.md                    # System Documentation
@@ -48,119 +68,35 @@ DEMO For ML/
 
 ## ⚡ Key Features
 
-### 1. Automatic Hardware Telemetry Collection
-- **Device Model & OS:** WMI queries for Manufacturer, Model (`Win32_ComputerSystem`), and Serial Number (`Win32_BIOS`).
-- **Battery Health & Wear:** Windows `powercfg /batteryreport` parser capturing Design Capacity (mWh), Full Charge Capacity (mWh), Health %, and Cycle Count.
-- **SSD Storage Health:** PowerShell `Get-PhysicalDisk` inspector retrieving physical disk status.
-- **Thermal Sensors:** Real-time CPU Core/Package temperatures extracted from LibreHardwareMonitor (`http://127.0.0.1:8085/data.json`).
-- **Kernel Crashes:** PowerShell `Get-WinEvent` tracking Event IDs **41** (Kernel-Power) & **6008** (Unexpected Shutdowns) over the last 30 days.
+### 1. 1-Click Double-Click Client Agent Installation
+Target employee laptops can be configured in seconds without running PowerShell commands:
+- Simply double-click **[`agent/Install_ApexPulse_Agent.bat`](file:///c:/Users/Dilshan%20Mindika/Downloads/DEMO%20For%20ML/agent/Install_ApexPulse_Agent.bat)**.
+- Copies the agent to `%AppData%\ApexPulseAgent` and registers it in **Windows Registry Startup** (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run\ApexPulseAgent`).
+- The agent launches automatically on Windows startup and POSTs hardware metrics to the central server every 30 minutes.
 
-### 2. AI Agent Health Calculations
-- **Automatic Usage Profile Classifier:**
-  - `< 5 hours/day` ➡️ `Light`
-  - `5 – 8 hours/day` ➡️ `Normal`
-  - `> 8 hours/day` ➡️ `Heavy`
-- **Performance Score (0 – 100):** Multi-factor composite score evaluating CPU, RAM, and Disk load contention.
-- **Enterprise Device Health Index (EDHI) (0 – 100):** Holistic index weighing battery health (25%), SSD health (25%), thermal stress (20%), crash logs (15%), and performance (15%).
+### 2. Multi-Device Enterprise Fleet Inventory
+- Central Fleet Manager (`backend/core/fleet_manager.py`) tracks all connected laptops by Serial Number and Hostname.
+- Next.js dashboard includes a **Device Selector Dropdown** allowing IT administrators to switch telemetry views across employee laptops in real time.
 
-### 3. Machine Learning RUL Prediction (XGBoost)
-Pushes a structured 11-feature vector into `xgboost_rul_model.pkl`:
-- `device_model`, `usage_profile`, `age`, `usage_hours`, `battery_cycles`, `battery_health`, `ssd_health`, `temperature`, `performance_score`, `shutdown_count`, `edhi`.
-
-**Recommendation Decision Rules:**
-| Predicted RUL (Months) | Status Level | Recommendation Category | Color Code |
-| :--- | :--- | :--- | :--- |
-| **> 36 Months** | `healthy` | **Healthy Device** | `#10B981` (Green) |
-| **24 – 36 Months** | `monitor` | **Monitor Device** | `#3B82F6` (Blue) |
-| **12 – 24 Months** | `plan_replacement` | **Plan Replacement** | `#F59E0B` (Orange) |
-| **< 12 Months** | `replace_soon` | **Replace Soon** | `#EF4444` (Red) |
-
-### 4. Component-Level Maintenance Simulation
-Simulates part replacements (e.g. Battery replacement resetting health to 100% and cycles to 0, SSD replacement, or full refurbish) while **preserving historical device age and usage logs**, allowing IT administrators to evaluate instantaneous RUL extension.
+### 3. AI Health Scoring & XGBoost RUL Prediction
+- Evaluates Usage Profile (`Light`, `Normal`, `Heavy`), Performance Score (0-100), and Enterprise Device Health Index (EDHI) (0-100).
+- Predicts Remaining Useful Life in months and maps recommendation badges (`Healthy Device`, `Monitor Device`, `Plan Replacement`, `Replace Soon`).
 
 ---
 
-## 🛠️ Installation & Setup Instructions
+## 🛠️ Quick Start Guide
 
-### Prerequisites
-- **Python 3.10+**
-- **Node.js v18+** and **npm**
-- **Windows OS** (for native WMI, PowerCfg, and Event Log sensors)
-
----
-
-### Step 1: Start the Backend API (Python)
-
-1. Open PowerShell or Command Prompt in the project root:
-```powershell
-# Install Python dependencies
-python -m pip install flask flask-cors psutil wmi requests joblib scikit-learn xgboost pandas
-```
-
-2. Start the Flask REST API server:
+### Step 1: Start Backend API (Port 5000)
 ```powershell
 python backend/app.py
 ```
-- The backend API will start at **`http://127.0.0.1:5000`**.
 
----
-
-### Step 2: Start the Next.js Frontend Dashboard
-
-1. Open a new terminal in the `frontend/` directory:
+### Step 2: Start Next.js Frontend (Port 3000)
 ```powershell
 cd frontend
-
-# Install Node dependencies (if not already installed)
-npm install
-
-# Start the Next.js development server
 npm run dev
 ```
-- The Next.js dashboard will be live at **`http://localhost:3000`**.
 
----
-
-## 🧪 Running Automated Unit Tests
-
-To verify backend telemetry collection, usage profile classification, EDHI calculation, and model prediction logic:
-
-```powershell
-python -m unittest discover -s backend/tests -p "test_*.py"
-```
-
----
-
-## 📡 REST API Documentation
-
-### `POST /api/predict`
-Calculates real-time telemetry, runs AI agent scoring, and returns XGBoost RUL prediction.
-- **Request Body:** `{"age": 24, "daily_usage": 6.5}`
-- **Response:**
-```json
-{
-  "prediction": {
-    "rul_months": 28.53,
-    "recommendation": "Monitor Device",
-    "status_level": "monitor",
-    "status_color": "#3B82F6",
-    "ml_input": {
-      "device_model": "Dell XPS 15",
-      "usage_profile": "Normal",
-      "age": 24,
-      "usage_hours": 4680,
-      "battery_cycles": 280,
-      "battery_health": 85.5,
-      "ssd_health": 92.0,
-      "temperature": 52.4,
-      "performance_score": 88.0,
-      "shutdown_count": 1,
-      "edhi": 84.2
-    }
-  }
-}
-```
-
-### `POST /api/simulate-maintenance`
-Applies component-level resets and returns updated RUL prediction.
-- **Request Body:** `{"action": "replace_battery", "ml_input": {...}}`
+### Step 3: Log In to Dashboard
+1. Open **`http://localhost:3000`** in your browser.
+2. Sign in using any of the 5 admin accounts (e.g. `admin@apex.com` / `admin123`).

@@ -17,8 +17,14 @@ import {
   Laptop,
   Server,
   Users,
-  ChevronDown
+  ChevronDown,
+  Lock,
+  Mail,
+  Key,
+  LogOut,
+  UserCheck
 } from "lucide-react";
+import { authenticateUser, HARDCODED_ADMIN_USERS, UserAccount } from "./auth";
 
 interface TelemetryData {
   device_name: string;
@@ -94,16 +100,49 @@ interface FleetSummary {
 const API_BASE_URL = "http://127.0.0.1:5000";
 
 export default function DashboardPage() {
+  // Authentication State
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+  const [loginEmail, setLoginEmail] = useState<string>("admin@apex.com");
+  const [loginPassword, setLoginPassword] = useState<string>("admin123");
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Dashboard Data State
   const [data, setData] = useState<{ telemetry: TelemetryData; prediction: PredictionResult } | null>(null);
   const [fleetSummary, setFleetSummary] = useState<FleetSummary | null>(null);
   const [devicesList, setDevicesList] = useState<DeviceSummary[]>([]);
-  const [selectedDeviceId, setSelectedDeviceId] = useState<string | null>(null);
 
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
   const [manualAge, setManualAge] = useState<number>(24);
   const [dailyUsage, setDailyUsage] = useState<number>(6.5);
+
+  useEffect(() => {
+    const savedUser = localStorage.getItem("apex_user");
+    if (savedUser) {
+      try {
+        setCurrentUser(JSON.parse(savedUser));
+      } catch (e) {}
+    }
+  }, []);
+
+  const handleLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    const user = authenticateUser(loginEmail, loginPassword);
+    if (user) {
+      setCurrentUser(user);
+      localStorage.setItem("apex_user", JSON.stringify(user));
+      fetchPrediction();
+    } else {
+      setAuthError("Invalid administrator credentials. Please check email or password.");
+    }
+  };
+
+  const handleLogout = () => {
+    setCurrentUser(null);
+    localStorage.removeItem("apex_user");
+  };
 
   const fetchFleet = async () => {
     try {
@@ -150,7 +189,6 @@ export default function DashboardPage() {
       if (!res.ok) throw new Error("Device details fetch failed");
       const json = await res.json();
       setData({ telemetry: json.telemetry, prediction: json.prediction });
-      setSelectedDeviceId(deviceId);
     } catch (err: any) {
       alert(`Device Selection Error: ${err.message}`);
     } finally {
@@ -191,8 +229,112 @@ export default function DashboardPage() {
   };
 
   useEffect(() => {
-    fetchPrediction();
-  }, []);
+    if (currentUser) {
+      fetchPrediction();
+    }
+  }, [currentUser]);
+
+  // Render Login View if unauthenticated
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-[#0B0F17] flex items-center justify-center p-4 relative overflow-hidden">
+        {/* Background glow effects */}
+        <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="w-full max-w-md glass-card p-8 relative z-10">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/30 mx-auto mb-4">
+              <Cpu className="w-8 h-8 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold font-outfit text-white">ApexPulse Enterprise</h1>
+            <p className="text-xs text-gray-400 mt-1">Predictive Maintenance & Fleet Monitoring Portal</p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-5">
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 mb-1.5">
+                Administrator Email
+              </label>
+              <div className="relative">
+                <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                <input
+                  type="email"
+                  required
+                  value={loginEmail}
+                  onChange={(e) => setLoginEmail(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  placeholder="admin@apex.com"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-semibold text-gray-400 mb-1.5">
+                Password
+              </label>
+              <div className="relative">
+                <Key className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                <input
+                  type="password"
+                  required
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  placeholder="••••••••"
+                />
+              </div>
+            </div>
+
+            {authError && (
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                <span>{authError}</span>
+              </div>
+            )}
+
+            <button
+              type="submit"
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+            >
+              Sign In to Fleet Portal
+            </button>
+          </form>
+
+          {/* Quick Select Preset Admin Credentials */}
+          <div className="mt-8 pt-6 border-t border-white/10">
+            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-3 text-center">
+              Quick Login (5 Hardcoded Accounts)
+            </span>
+
+            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+              {Object.values(HARDCODED_ADMIN_USERS).map((acc) => (
+                <button
+                  key={acc.user.email}
+                  onClick={() => {
+                    setLoginEmail(acc.user.email);
+                    setLoginPassword(acc.pass);
+                  }}
+                  className="w-full text-left bg-white/5 hover:bg-blue-500/10 border border-white/5 hover:border-blue-500/30 p-2.5 rounded-lg text-xs flex items-center justify-between transition-all group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-2 h-2 rounded-full ${acc.user.avatarColor}`} />
+                    <div>
+                      <strong className="block text-white font-medium">{acc.user.name}</strong>
+                      <span className="text-[10px] text-gray-400">{acc.user.email}</span>
+                    </div>
+                  </div>
+                  <span className="text-[10px] bg-white/10 group-hover:bg-blue-500/20 text-gray-300 px-2 py-0.5 rounded font-mono">
+                    {acc.pass}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const prediction = data?.prediction;
   const telemetry = data?.telemetry;
@@ -234,7 +376,7 @@ export default function DashboardPage() {
       {/* Sidebar */}
       <aside className="w-64 bg-[#0F172A]/80 backdrop-blur-xl border-r border-white/10 p-6 flex flex-col justify-between hidden md:flex">
         <div>
-          <div className="flex items-center gap-3 mb-10">
+          <div className="flex items-center gap-3 mb-8">
             <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
               <Cpu className="w-6 h-6 text-white" />
             </div>
@@ -244,6 +386,26 @@ export default function DashboardPage() {
                 Enterprise Fleet AI
               </span>
             </div>
+          </div>
+
+          {/* Active Admin Profile Card */}
+          <div className="bg-white/5 border border-white/10 p-3 rounded-xl mb-6 flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className={`w-8 h-8 rounded-full ${currentUser.avatarColor} flex items-center justify-center font-bold text-xs text-white`}>
+                {currentUser.name.charAt(0)}
+              </div>
+              <div className="overflow-hidden">
+                <strong className="block text-xs font-semibold truncate text-white">{currentUser.name}</strong>
+                <small className="text-[10px] text-gray-400 block truncate">{currentUser.role}</small>
+              </div>
+            </div>
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              className="text-gray-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
 
           <nav className="space-y-2">
@@ -371,7 +533,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Main Dashboard Grid */}
+        {/* Dashboard Grid */}
         <div className="grid grid-cols-12 gap-6">
           {/* Hero RUL Banner */}
           <section className="col-span-12 glass-card p-6 md:p-8 relative overflow-hidden">
