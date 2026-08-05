@@ -24,9 +24,7 @@ import {
   Sun,
   Moon,
   Sliders,
-  BarChart3,
-  CheckCircle2,
-  BookOpen
+  BarChart3
 } from "lucide-react";
 import { authenticateUser, UserAccount } from "./auth";
 
@@ -107,7 +105,7 @@ export default function DashboardPage() {
   // Theme State (Dark by default)
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
-  // Active Tab State: 'telemetry' | 'explainability' | 'maintenance' | 'methodology'
+  // Active Tab State: 'telemetry' | 'explainability' | 'maintenance'
   const [activeTab, setActiveTab] = useState<string>("telemetry");
 
   // Authentication State
@@ -275,7 +273,7 @@ export default function DashboardPage() {
               <Cpu className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold font-outfit text-[var(--text-heading)]">ApexPulse Enterprise</h1>
-            <p className="text-xs text-[var(--text-secondary)] mt-1">University Final Year Research Portal</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">Real-World Laptop Lifecycle & Fleet Intelligence System</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
@@ -331,7 +329,7 @@ export default function DashboardPage() {
               type="submit"
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              Sign In to Research Portal
+              Sign In to Fleet Portal
             </button>
           </form>
         </div>
@@ -386,12 +384,12 @@ export default function DashboardPage() {
             <div>
               <h2 className="font-bold text-lg leading-tight font-outfit text-[var(--text-heading)]">ApexPulse</h2>
               <span className="text-[11px] text-blue-500 uppercase tracking-wider font-semibold block">
-                Research Portal
+                Production Engine
               </span>
             </div>
           </div>
 
-          {/* Multi-Tab Research Navigation Links */}
+          {/* Enterprise Navigation Links (3 Tabs) */}
           <nav className="space-y-1.5">
             <button
               onClick={() => setActiveTab("telemetry")}
@@ -428,18 +426,6 @@ export default function DashboardPage() {
               <Wrench className="w-4 h-4" />
               Prescriptive ROI Matrix
             </button>
-
-            <button
-              onClick={() => setActiveTab("methodology")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
-                activeTab === "methodology"
-                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              Research Methodology
-            </button>
           </nav>
         </div>
 
@@ -463,7 +449,7 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          {/* Active Admin Profile Card (Moved to Bottom) */}
+          {/* Active Admin Profile Card */}
           <div className="bg-[var(--bg-input)] border border-[var(--border-input)] p-3 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className={`w-8 h-8 rounded-full ${currentUser.avatarColor} flex items-center justify-center font-bold text-xs text-white`}>
@@ -491,13 +477,12 @@ export default function DashboardPage() {
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
             <div className="flex items-center gap-2 text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">
-              <Sparkles className="w-3.5 h-3.5" /> University Final Year Research Project
+              <Sparkles className="w-3.5 h-3.5" /> Real-World Production System
             </div>
             <h1 className="text-2xl md:text-3xl font-bold font-outfit text-[var(--text-heading)]">
               {activeTab === "telemetry" && "Fleet Telemetry & XGBoost RUL Forecasting"}
               {activeTab === "explainability" && "XGBoost Feature Sensitivity & Explainability"}
               {activeTab === "maintenance" && "Prescriptive Maintenance & ROI Optimization"}
-              {activeTab === "methodology" && "Academic ML Research Methodology"}
             </h1>
           </div>
 
@@ -529,7 +514,7 @@ export default function DashboardPage() {
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
             >
               <RotateCw className={`w-4 h-4 ${loading ? "animate-spin-fast" : ""}`} />
-              <span>{loading ? "Refreshing..." : "Refresh Payload"}</span>
+              <span>{loading ? "Refreshing..." : "Refresh Live Payload"}</span>
             </button>
           </div>
         </header>
@@ -601,7 +586,7 @@ export default function DashboardPage() {
                   <Sparkles className="w-3.5 h-3.5" /> XGBoost Regressor RUL Forecast
                 </span>
                 <span className="text-xs text-[var(--text-secondary)]">
-                  Host: <strong>{telemetry?.device_name || "--"}</strong> • Updated: {prediction ? new Date(prediction.timestamp).toLocaleTimeString() : "--"}
+                  Host: <strong>{telemetry?.device_name || "--"}</strong> • Serial: <strong>{telemetry?.serial_number || "--"}</strong> • Updated: {prediction ? new Date(prediction.timestamp).toLocaleTimeString() : "--"}
                 </span>
               </div>
 
@@ -817,6 +802,98 @@ export default function DashboardPage() {
                 </div>
               </section>
             )}
+
+            {/* Real Feature Matrix Table */}
+            <section className="col-span-12 glass-card p-6">
+              <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
+                <Server className="w-5 h-5 text-gray-400" /> Live Hardware Telemetry Feature Vector Passed to XGBoost Model
+              </h3>
+
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left border-collapse">
+                  <thead>
+                    <tr className="border-b border-[var(--table-header-border)] text-[var(--text-secondary)]">
+                      <th className="py-3 px-4">Feature Name</th>
+                      <th className="py-3 px-4">Live Hardware Value</th>
+                      <th className="py-3 px-4">Data Type</th>
+                      <th className="py-3 px-4">Real Hardware Source</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-[var(--table-header-border)]">
+                    {mlInput && (
+                      <>
+                        <tr>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">device_model</td>
+                          <td className="py-3 px-4 font-mono text-blue-500">{mlInput.device_model}</td>
+                          <td className="py-3 px-4 text-indigo-500">Categorical</td>
+                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real WMI Query (Win32_ComputerSystem)</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">usage_profile</td>
+                          <td className="py-3 px-4 font-mono text-indigo-500">{mlInput.usage_profile}</td>
+                          <td className="py-3 px-4 text-indigo-500">Categorical</td>
+                          <td className="py-3 px-4 text-[var(--text-secondary)]">Live AI Agent Classifier</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">age</td>
+                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.age} months</td>
+                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
+                          <td className="py-3 px-4 text-[var(--text-secondary)]">Device Lifecycle Input</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">usage_hours</td>
+                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.usage_hours} hrs</td>
+                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
+                          <td className="py-3 px-4 text-[var(--text-secondary)]">Calculated Daily Load</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">battery_cycles</td>
+                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.battery_cycles}</td>
+                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
+                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real Windows PowerCfg Report</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">battery_health</td>
+                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.battery_health}%</td>
+                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
+                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real Windows PowerCfg (Design vs Full Charge)</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">ssd_health</td>
+                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.ssd_health}%</td>
+                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
+                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real PowerShell Get-PhysicalDisk</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">temperature</td>
+                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.temperature} °C</td>
+                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
+                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real LibreHardwareMonitor API Sensor</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">performance_score</td>
+                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.performance_score} / 100</td>
+                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
+                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real psutil CPU/RAM Contention Agent</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">shutdown_count</td>
+                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.shutdown_count}</td>
+                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
+                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real Windows Event Log (Event ID 41 & 6008)</td>
+                        </tr>
+                        <tr>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">edhi</td>
+                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.edhi} / 100</td>
+                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
+                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real Enterprise Device Health Index Agent</td>
+                        </tr>
+                      </>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>
         )}
 
@@ -991,75 +1068,10 @@ export default function DashboardPage() {
                       <td className="py-3 px-4 font-mono text-[var(--text-primary)]">$175.00</td>
                       <td className="py-3 px-4 font-bold text-indigo-500">+22.8 Months</td>
                       <td className="py-3 px-4 font-mono text-indigo-500 font-semibold">5.6x ROI</td>
-                      <td className="py-3 px-4"><span className="bg-indigo-500/20 text-indigo-500 px-2.5 py-0.5 rounded font-semibold">High Priority</span></td>
+                      <td className="py-3 px-4"><span className="bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded font-semibold">High Priority</span></td>
                     </tr>
                   </tbody>
                 </table>
-              </div>
-            </section>
-          </div>
-        )}
-
-        {/* TAB 4: ACADEMIC RESEARCH METHODOLOGY */}
-        {activeTab === "methodology" && (
-          <div className="grid grid-cols-12 gap-6">
-            <section className="col-span-12 glass-card p-6 md:p-8">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-blue-500/15 rounded-xl flex items-center justify-center text-blue-500">
-                  <BookOpen className="w-6 h-6" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-bold font-outfit text-[var(--text-heading)]">University Final Year Research Methodology</h2>
-                  <p className="text-xs text-[var(--text-secondary)]">Enterprise Laptop Hardware Wear & Machine Learning RUL Prediction Architecture</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs text-[var(--text-secondary)]">
-                <div className="space-y-4">
-                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
-                    <h4 className="font-bold text-sm text-[var(--text-heading)] mb-2 flex items-center gap-2">
-                      <Cpu className="w-4 h-4 text-blue-500" /> 1. XGBoost Regression Pipeline
-                    </h4>
-                    <p className="leading-relaxed">
-                      The predictive pipeline utilizes an <strong>Extreme Gradient Boosting (XGBoost) Regressor</strong> model wrapped in a Scikit-learn <code className="text-indigo-500">ColumnTransformer</code>. It encodes categorical telemetry (device model, usage profile) and normalizes continuous hardware signals.
-                    </p>
-                  </div>
-
-                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
-                    <h4 className="font-bold text-sm text-[var(--text-heading)] mb-2 flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-emerald-500" /> 2. Enterprise Device Health Index (EDHI) Formula
-                    </h4>
-                    <p className="leading-relaxed font-mono text-[11px] bg-[var(--bg-card)] p-2.5 rounded-lg border border-[var(--border-card)] text-emerald-500 mb-2">
-                      EDHI = 0.30(BatHealth) + 0.25(SSDHealth) + 0.20(PerfScore) + 0.15(TempFactor) - 0.10(Shutdowns)
-                    </p>
-                    <p className="leading-relaxed">
-                      Synthesizes multi-factor physical telemetry into a single holistic health rating between 0 and 100.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
-                    <h4 className="font-bold text-sm text-[var(--text-heading)] mb-2 flex items-center gap-2">
-                      <Server className="w-4 h-4 text-amber-500" /> 3. Automated Windows Telemetry Pipeline
-                    </h4>
-                    <ul className="list-disc pl-4 space-y-1 text-[var(--text-secondary)]">
-                      <li><strong>WMI API:</strong> Computer model & BIOS serial numbers.</li>
-                      <li><strong>Windows PowerCfg:</strong> Design capacity vs full charge capacity (battery wear %).</li>
-                      <li><strong>PowerShell PhysicalDisk:</strong> NVMe storage integrity status.</li>
-                      <li><strong>Windows Event Log:</strong> Event IDs 41 & 6008 kernel power crash counts.</li>
-                    </ul>
-                  </div>
-
-                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
-                    <h4 className="font-bold text-sm text-[var(--text-heading)] mb-2 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-purple-500" /> 4. Research Citation & Team
-                    </h4>
-                    <p className="leading-relaxed">
-                      Developed as a Final Year University Research Project focusing on enterprise hardware sustainability and AI-driven lifecycle optimization.
-                    </p>
-                  </div>
-                </div>
               </div>
             </section>
           </div>

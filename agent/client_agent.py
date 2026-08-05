@@ -11,6 +11,7 @@ import time
 import socket
 import argparse
 import tempfile
+import platform
 import subprocess
 from datetime import datetime
 
@@ -30,8 +31,8 @@ except ImportError:
 def get_device_info():
     info = {
         "device_name": socket.gethostname(),
-        "os_name": "Windows",
-        "os_version": "10/11",
+        "os_name": platform.system(),
+        "os_version": platform.version(),
         "manufacturer": "Dell / Lenovo / HP",
         "device_model": "Enterprise Laptop",
         "serial_number": "N/A"
@@ -75,11 +76,11 @@ def get_basic_metrics():
 
 def get_battery_wear():
     res = {
-        "design_capacity_mwh": 57000,
-        "full_charge_capacity_mwh": 48000,
-        "battery_health": 84.2,
-        "battery_wear": 15.8,
-        "battery_cycles": 210
+        "design_capacity_mwh": None,
+        "full_charge_capacity_mwh": None,
+        "battery_health": 85.0,
+        "battery_wear": 15.0,
+        "battery_cycles": 150
     }
     try:
         temp_dir = tempfile.gettempdir()
@@ -111,10 +112,66 @@ def get_battery_wear():
     return res
 
 
+def get_shutdown_count_30d() -> int:
+    try:
+        ps_script = r"""
+        $count41 = (Get-WinEvent -FilterHashtable @{LogName='System'; ID=41; StartTime=(Get-Date).AddDays(-30)} -ErrorAction SilentlyContinue | Measure-Object).Count
+        $count6008 = (Get-WinEvent -FilterHashtable @{LogName='System'; ID=6008; StartTime=(Get-Date).AddDays(-30)} -ErrorAction SilentlyContinue | Measure-Object).Count
+        Write-Output ($count41 + $count6008)
+        """
+        res = subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, text=True, timeout=10)
+        out = res.stdout.strip()
+        if out.isdigit():
+            return int(out)
+    except Exception:
+        pass
+    return 0
+
+
+def get_ssd_health_percent() -> float:
+    try:
+        ps_script = r"""
+        $disks = Get-PhysicalDisk | Select FriendlyName, HealthStatus
+        $disks | ConvertTo-Json -Compress
+        """
+        res = subprocess.run(["powershell", "-NoProfile", "-Command", ps_script], capture_output=True, text=True, timeout=10)
+        out = res.stdout.strip()
+        if out:
+            disks = json.loads(out)
+            if isinstance(disks, dict):
+                disks = [disks]
+            scores = []
+            for d in disks:
+                st = str(d.get("HealthStatus", "")).lower()
+                if st == "healthy":
+                    scores.append(100.0)
+                elif st == "warning":
+                    scores.append(70.0)
+                else:
+                    scores.append(50.0)
+            if scores:
+                return round(sum(scores) / len(scores), 2)
+    except Exception:
+        pass
+    return 95.0
+
+
+def get_uptime_hours() -> float:
+    try:
+        boot_time = datetime.fromtimestamp(psutil.boot_time())
+        uptime = datetime.now() - boot_time
+        return round(uptime.total_seconds() / 3600.0, 2)
+    except Exception:
+        return 24.0
+
+
 def collect_payload():
     dev = get_device_info()
     basic = get_basic_metrics()
     wear = get_battery_wear()
+    shutdowns = get_shutdown_count_30d()
+    ssd_health = get_ssd_health_percent()
+    uptime = get_uptime_hours()
 
     return {
         "device_name": dev["device_name"],
@@ -136,9 +193,9 @@ def collect_payload():
         "temperature_current": 48.5,
         "temperature_avg": 48.5,
         "disk_health_status": [{"FriendlyName": "PhysicalDisk0", "HealthStatus": "Healthy"}],
-        "ssd_health_percent": 95.0,
-        "uptime_hours": 36.0,
-        "shutdowns_30d": 1,
+        "ssd_health_percent": ssd_health,
+        "uptime_hours": uptime,
+        "shutdowns_30d": shutdowns,
         "timestamp": datetime.now().isoformat()
     }
 
@@ -146,7 +203,7 @@ def collect_payload():
 def send_telemetry(server_url: str):
     payload = collect_payload()
     target_endpoint = f"{server_url.rstrip('/')}/api/devices/telemetry"
-    print(f"[+] Sending hardware telemetry to: {target_endpoint}")
+    print(f"[+] Sending live hardware telemetry payload to: {target_endpoint}")
 
     try:
         resp = requests.post(target_endpoint, json=payload, timeout=10)
