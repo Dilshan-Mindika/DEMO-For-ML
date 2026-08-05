@@ -14,7 +14,6 @@ import {
   Eye,
   EyeOff,
   Clock,
-  Sparkles,
   Server,
   Users,
   ChevronDown,
@@ -24,8 +23,7 @@ import {
   Sun,
   Moon,
   Sliders,
-  BarChart3,
-  Monitor
+  BarChart3
 } from "lucide-react";
 import { authenticateUser, UserAccount } from "./auth";
 
@@ -477,8 +475,8 @@ export default function DashboardPage() {
         {/* Header Bar */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">
-              <Sparkles className="w-3.5 h-3.5" /> Real-World Production System
+            <div className="text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">
+              Real-World Production System
             </div>
             <h1 className="text-2xl md:text-3xl font-bold font-outfit text-[var(--text-heading)]">
               {activeTab === "telemetry" && "Fleet Telemetry & XGBoost RUL Forecasting"}
@@ -583,8 +581,8 @@ export default function DashboardPage() {
             {/* Hero RUL Forecast Gauge Banner */}
             <section className="col-span-12 glass-card p-6 md:p-8 relative overflow-hidden">
               <div className="flex justify-between items-center mb-6">
-                <span className="bg-blue-500/15 text-blue-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                  <Sparkles className="w-3.5 h-3.5" /> XGBoost Regressor RUL Forecast
+                <span className="bg-blue-500/15 text-blue-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
+                  XGBoost Regressor RUL Forecast
                 </span>
                 <span className="text-xs text-[var(--text-secondary)]">
                   Host: <strong>{telemetry?.device_name || "--"}</strong> • Serial: <strong>{telemetry?.serial_number || "--"}</strong> • Updated: {prediction ? new Date(prediction.timestamp).toLocaleTimeString() : "--"}
@@ -1022,7 +1020,7 @@ export default function DashboardPage() {
                 </button>
 
                 <button onClick={() => triggerMaintenance("full_overhaul")} disabled={loading} className="bg-gradient-to-br from-indigo-600/20 to-emerald-600/20 border border-indigo-500/40 hover:border-indigo-400 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
-                  <Sparkles className="w-8 h-8 text-indigo-500 dark:text-indigo-300 group-hover:scale-110 transition-transform" />
+                  <Wrench className="w-8 h-8 text-indigo-500 dark:text-indigo-300 group-hover:scale-110 transition-transform" />
                   <div>
                     <strong className="block text-sm text-[var(--text-heading)]">Full Refurbish Overhaul</strong>
                     <span className="text-xs text-[var(--text-secondary)]">New Battery + SSD + Thermal Service</span>
@@ -1064,7 +1062,7 @@ export default function DashboardPage() {
                     </tr>
                     <tr className="hover:bg-[var(--table-hover)]">
                       <td className="py-3 px-4 font-semibold text-[var(--text-heading)] flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-indigo-500" /> Full Enterprise Refurbish
+                        <Wrench className="w-4 h-4 text-indigo-500" /> Full Enterprise Refurbish
                       </td>
                       <td className="py-3 px-4 font-mono text-[var(--text-primary)]">$175.00</td>
                       <td className="py-3 px-4 font-bold text-indigo-500">+22.8 Months</td>
