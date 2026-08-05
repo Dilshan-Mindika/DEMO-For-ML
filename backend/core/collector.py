@@ -59,7 +59,7 @@ class HardwareCollector:
 
     def get_basic_metrics(self) -> Dict[str, Any]:
         try:
-            cpu_usage = psutil.cpu_percent(interval=0.5)
+            cpu_usage = psutil.cpu_percent(interval=0.1)
         except Exception:
             cpu_usage = None
 

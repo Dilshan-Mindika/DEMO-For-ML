@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Cpu,
   HardDrive,
@@ -23,7 +23,10 @@ import {
   Sun,
   Moon,
   Sliders,
-  BarChart3
+  BarChart3,
+  Pause,
+  Play,
+  Zap
 } from "lucide-react";
 import { authenticateUser, UserAccount } from "./auth";
 
@@ -120,10 +123,13 @@ export default function DashboardPage() {
   const [devicesList, setDevicesList] = useState<DeviceSummary[]>([]);
 
   const [loading, setLoading] = useState<boolean>(false);
+  const [isAutoPolling, setIsAutoPolling] = useState<boolean>(true);
+  const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
   const [manualAge, setManualAge] = useState<number>(24);
   const [dailyUsage, setDailyUsage] = useState<number>(6.5);
+  const [selectedDeviceId, setSelectedDeviceId] = useState<string>("local");
 
   // What-If Interactive Sensitivity State
   const [simAge, setSimAge] = useState<number>(24);
@@ -151,7 +157,7 @@ export default function DashboardPage() {
     if (user) {
       setCurrentUser(user);
       localStorage.setItem("apex_user", JSON.stringify(user));
-      fetchPrediction();
+      fetchPrediction(true);
     } else {
       setAuthError("Invalid administrator credentials. Access denied.");
     }
@@ -175,22 +181,31 @@ export default function DashboardPage() {
     }
   };
 
-  const fetchPrediction = async (age = manualAge, usage = dailyUsage) => {
-    setLoading(true);
+  const fetchPrediction = async (showSpinner = false, age = manualAge, usage = dailyUsage) => {
+    if (showSpinner) setLoading(true);
     setError(null);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/predict`, {
+      let endpoint = `${API_BASE_URL}/api/predict`;
+      let options: RequestInit = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ age, daily_usage: usage }),
-      });
+      };
 
+      if (selectedDeviceId !== "local") {
+        endpoint = `${API_BASE_URL}/api/devices/${selectedDeviceId}`;
+        options = { method: "GET" };
+      }
+
+      const res = await fetch(endpoint, options);
       if (!res.ok) throw new Error(`Backend API Error: ${res.statusText}`);
 
       const json = await res.json();
       if (json.error) throw new Error(json.error);
 
       setData({ telemetry: json.telemetry, prediction: json.prediction });
+      setLastUpdatedTime(new Date().toLocaleTimeString());
+
       if (json.prediction.ml_input) {
         const ml = json.prediction.ml_input;
         setSimAge(ml.age);
@@ -203,17 +218,31 @@ export default function DashboardPage() {
       console.error(err);
       setError(err.message || "Failed to connect to backend server.");
     } finally {
-      setLoading(false);
+      if (showSpinner) setLoading(false);
     }
   };
 
   const selectDevice = async (deviceId: string) => {
+    setSelectedDeviceId(deviceId);
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/devices/${deviceId}`);
+      let endpoint = `${API_BASE_URL}/api/predict`;
+      let options: RequestInit = {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ age: manualAge, daily_usage: dailyUsage }),
+      };
+
+      if (deviceId !== "local") {
+        endpoint = `${API_BASE_URL}/api/devices/${deviceId}`;
+        options = { method: "GET" };
+      }
+
+      const res = await fetch(endpoint, options);
       if (!res.ok) throw new Error("Device details fetch failed");
       const json = await res.json();
       setData({ telemetry: json.telemetry, prediction: json.prediction });
+      setLastUpdatedTime(new Date().toLocaleTimeString());
     } catch (err: any) {
       alert(`Device Selection Error: ${err.message}`);
     } finally {
@@ -253,11 +282,20 @@ export default function DashboardPage() {
     }
   };
 
+  // Automated 3-Second Real-Time Telemetry Stream Polling Effect
   useEffect(() => {
-    if (currentUser) {
-      fetchPrediction();
-    }
-  }, [currentUser]);
+    if (!currentUser) return;
+
+    fetchPrediction(true);
+
+    const intervalId = setInterval(() => {
+      if (isAutoPolling) {
+        fetchPrediction(false);
+      }
+    }, 3000);
+
+    return () => clearInterval(intervalId);
+  }, [currentUser, isAutoPolling, selectedDeviceId, manualAge, dailyUsage]);
 
   // Render Login View if unauthenticated
   if (!currentUser) {
@@ -475,8 +513,13 @@ export default function DashboardPage() {
         {/* Header Bar */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <div className="text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">
-              Real-World Production System
+            <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-wider mb-1">
+              <span className="text-blue-500">Real-World Production System</span>
+              {/* Live Streaming Pulse Indicator */}
+              <div className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 px-2.5 py-0.5 rounded-full">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                <span className="text-[10px] font-bold">LIVE TELEMETRY STREAM (3s)</span>
+              </div>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold font-outfit text-[var(--text-heading)]">
               {activeTab === "telemetry" && "Fleet Telemetry & XGBoost RUL Forecasting"}
@@ -485,14 +528,26 @@ export default function DashboardPage() {
             </h1>
           </div>
 
-          <div className="flex items-center gap-4 flex-wrap">
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Live Polling Stream Pause/Play Toggle */}
+            <button
+              onClick={() => setIsAutoPolling(!isAutoPolling)}
+              title={isAutoPolling ? "Pause Live 3s Stream" : "Resume Live 3s Stream"}
+              className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
+                isAutoPolling
+                  ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-500"
+                  : "bg-amber-500/10 border-amber-500/40 text-amber-500"
+              }`}
+            >
+              {isAutoPolling ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+              <span>{isAutoPolling ? "Live Stream Active" : "Stream Paused"}</span>
+            </button>
+
             {/* Device Selector */}
             <div className="relative">
               <select
-                onChange={(e) => {
-                  if (e.target.value === "local") fetchPrediction();
-                  else selectDevice(e.target.value);
-                }}
+                value={selectedDeviceId}
+                onChange={(e) => selectDevice(e.target.value)}
                 className="bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] px-4 py-2.5 rounded-full text-xs font-semibold focus:outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer"
               >
                 <option value="local" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>
@@ -508,12 +563,12 @@ export default function DashboardPage() {
             </div>
 
             <button
-              onClick={() => fetchPrediction()}
+              onClick={() => fetchPrediction(true)}
               disabled={loading}
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
             >
               <RotateCw className={`w-4 h-4 ${loading ? "animate-spin-fast" : ""}`} />
-              <span>{loading ? "Refreshing..." : "Refresh Live Payload"}</span>
+              <span>{loading ? "Refreshing..." : "Refresh Payload"}</span>
             </button>
           </div>
         </header>
@@ -585,7 +640,7 @@ export default function DashboardPage() {
                   XGBoost Regressor RUL Forecast
                 </span>
                 <span className="text-xs text-[var(--text-secondary)]">
-                  Host: <strong>{telemetry?.device_name || "--"}</strong> • Serial: <strong>{telemetry?.serial_number || "--"}</strong> • Updated: {prediction ? new Date(prediction.timestamp).toLocaleTimeString() : "--"}
+                  Host: <strong>{telemetry?.device_name || "--"}</strong> • Serial: <strong>{telemetry?.serial_number || "--"}</strong> • Live Updated: <strong>{lastUpdatedTime || "--"}</strong>
                 </span>
               </div>
 
@@ -645,7 +700,7 @@ export default function DashboardPage() {
                       onChange={(e) => {
                         const val = Number(e.target.value);
                         setManualAge(val);
-                        fetchPrediction(val, dailyUsage);
+                        fetchPrediction(true, val, dailyUsage);
                       }}
                       className="w-16 bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-heading)] rounded-lg px-2 py-1 text-center font-bold focus:outline-none focus:border-blue-500"
                     />
@@ -660,7 +715,7 @@ export default function DashboardPage() {
                       onChange={(e) => {
                         const val = Number(e.target.value);
                         setDailyUsage(val);
-                        fetchPrediction(manualAge, val);
+                        fetchPrediction(true, manualAge, val);
                       }}
                       className="w-16 bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-heading)] rounded-lg px-2 py-1 text-center font-bold focus:outline-none focus:border-blue-500"
                     />
@@ -669,14 +724,70 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* Hardware Metrics Cards */}
+            {/* Dynamic Real-Time Hardware Metrics Grid */}
             <div className="col-span-12 lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* Live CPU Usage Card */}
+              <div className="glass-card p-5 flex items-center gap-4 border-l-4 border-l-blue-500">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center flex-shrink-0">
+                  <Cpu className="w-6 h-6 animate-pulse" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Live CPU Load</span>
+                    <span className="text-[10px] bg-blue-500/20 text-blue-500 font-bold px-2 py-0.5 rounded">REALTIME</span>
+                  </div>
+                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
+                    {telemetry?.cpu_usage !== undefined && telemetry?.cpu_usage !== null ? `${telemetry.cpu_usage.toFixed(1)}%` : "--%"}
+                  </h2>
+                  <div className="w-full h-1.5 bg-[var(--bg-input)] rounded-full mt-2 overflow-hidden">
+                    <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, telemetry?.cpu_usage || 0)}%` }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Live RAM Usage Card */}
+              <div className="glass-card p-5 flex items-center gap-4 border-l-4 border-l-indigo-500">
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/15 text-indigo-500 flex items-center justify-center flex-shrink-0">
+                  <Zap className="w-6 h-6 animate-pulse" />
+                </div>
+                <div className="flex-1">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Live RAM Usage</span>
+                    <span className="text-[10px] bg-indigo-500/20 text-indigo-500 font-bold px-2 py-0.5 rounded">REALTIME</span>
+                  </div>
+                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
+                    {telemetry?.ram_usage !== undefined && telemetry?.ram_usage !== null ? `${telemetry.ram_usage.toFixed(1)}%` : "--%"}
+                  </h2>
+                  <div className="w-full h-1.5 bg-[var(--bg-input)] rounded-full mt-2 overflow-hidden">
+                    <div className="h-full bg-indigo-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, telemetry?.ram_usage || 0)}%` }} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Live CPU Temperature Card */}
+              <div className="glass-card p-5 flex items-center gap-4 border-l-4 border-l-amber-500">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center flex-shrink-0">
+                  <Thermometer className="w-6 h-6 animate-pulse" />
+                </div>
+                <div>
+                  <div className="flex justify-between items-center gap-2">
+                    <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">CPU Thermal Sensor</span>
+                    <span className="text-[10px] bg-amber-500/20 text-amber-500 font-bold px-2 py-0.5 rounded">REALTIME</span>
+                  </div>
+                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
+                    {mlInput ? `${mlInput.temperature.toFixed(1)} °C` : "-- °C"}
+                  </h2>
+                  <div className="text-xs text-[var(--text-muted)] mt-1">Live Thermal Zone Sensor</div>
+                </div>
+              </div>
+
+              {/* Battery Wear Card */}
               <div className="glass-card p-5 flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center flex-shrink-0">
                   <Battery className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Battery Health</span>
+                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Battery Wear & Cycles</span>
                   <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
                     {mlInput ? `${mlInput.battery_health.toFixed(1)}%` : "--%"}
                   </h2>
@@ -686,12 +797,13 @@ export default function DashboardPage() {
                 </div>
               </div>
 
+              {/* SSD Health Card */}
               <div className="glass-card p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-cyan-500/15 text-cyan-500 flex items-center justify-center flex-shrink-0">
                   <HardDrive className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">SSD Health</span>
+                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">SSD Health Status</span>
                   <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
                     {mlInput ? `${mlInput.ssd_health.toFixed(1)}%` : "--%"}
                   </h2>
@@ -699,29 +811,17 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="glass-card p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center flex-shrink-0">
-                  <Thermometer className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Avg CPU Temp</span>
-                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
-                    {mlInput ? `${mlInput.temperature.toFixed(1)} °C` : "-- °C"}
-                  </h2>
-                  <div className="text-xs text-[var(--text-muted)] mt-1">Thermal Sensor Monitor</div>
-                </div>
-              </div>
-
+              {/* Kernel Shutdowns Card */}
               <div className="glass-card p-5 flex items-center gap-4">
                 <div className="w-12 h-12 rounded-xl bg-rose-500/15 text-rose-500 flex items-center justify-center flex-shrink-0">
                   <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Shutdowns (30d)</span>
+                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Shutdown Crashes (30d)</span>
                   <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
                     {mlInput ? mlInput.shutdown_count : "--"}
                   </h2>
-                  <div className="text-xs text-[var(--text-muted)] mt-1">Kernel Power Logs</div>
+                  <div className="text-xs text-[var(--text-muted)] mt-1">Windows Kernel Power Logs</div>
                 </div>
               </div>
             </div>
@@ -729,28 +829,28 @@ export default function DashboardPage() {
             {/* AI Scores Card */}
             <section className="col-span-12 lg:col-span-5 glass-card p-6 flex flex-col justify-between">
               <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <Activity className="w-5 h-5 text-blue-500" /> AI Agent Calculations
+                <Activity className="w-5 h-5 text-blue-500" /> AI Agent Real-Time Calculations
               </h3>
 
               <div className="space-y-6">
                 <div>
                   <div className="flex justify-between text-xs font-semibold mb-1.5">
-                    <span className="text-[var(--text-secondary)]">Performance Score</span>
-                    <span className="text-blue-500">{mlInput ? `${mlInput.performance_score.toFixed(1)} / 100` : "--"}</span>
+                    <span className="text-[var(--text-secondary)]">Live Performance Score</span>
+                    <span className="text-blue-500 font-mono font-bold">{mlInput ? `${mlInput.performance_score.toFixed(1)} / 100` : "--"}</span>
                   </div>
                   <div className="w-full h-2.5 bg-[var(--bg-input)] rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700" style={{ width: `${mlInput?.performance_score || 0}%` }} />
+                    <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500" style={{ width: `${mlInput?.performance_score || 0}%` }} />
                   </div>
-                  <small className="text-[11px] text-[var(--text-muted)] mt-1 block">CPU, RAM & Disk Load Contention</small>
+                  <small className="text-[11px] text-[var(--text-muted)] mt-1 block">Live CPU, RAM & Disk Load Contention Agent</small>
                 </div>
 
                 <div>
                   <div className="flex justify-between text-xs font-semibold mb-1.5">
                     <span className="text-[var(--text-secondary)]">Enterprise Device Health Index (EDHI)</span>
-                    <span className="text-emerald-500">{mlInput ? `${mlInput.edhi.toFixed(1)} / 100` : "--"}</span>
+                    <span className="text-emerald-500 font-mono font-bold">{mlInput ? `${mlInput.edhi.toFixed(1)} / 100` : "--"}</span>
                   </div>
                   <div className="w-full h-2.5 bg-[var(--bg-input)] rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all duration-700" style={{ width: `${mlInput?.edhi || 0}%` }} />
+                    <div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all duration-500" style={{ width: `${mlInput?.edhi || 0}%` }} />
                   </div>
                   <small className="text-[11px] text-[var(--text-muted)] mt-1 block">Multi-Factor Holistic Integrity Index</small>
                 </div>
