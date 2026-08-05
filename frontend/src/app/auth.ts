@@ -9,7 +9,7 @@ export const HARDCODED_ADMIN_USERS: Record<string, { user: UserAccount; pass: st
   "admin@apex.com": {
     user: {
       email: "admin@apex.com",
-      name: "Alex Mercer",
+      name: "Dilshan Mindika",
       role: "Lead IT Administrator",
       avatarColor: "bg-blue-600",
     },
@@ -18,7 +18,7 @@ export const HARDCODED_ADMIN_USERS: Record<string, { user: UserAccount; pass: st
   "sysadmin@apex.com": {
     user: {
       email: "sysadmin@apex.com",
-      name: "Sarah Chen",
+      name: "Kasun Perera",
       role: "System Administrator",
       avatarColor: "bg-indigo-600",
     },
@@ -27,7 +27,7 @@ export const HARDCODED_ADMIN_USERS: Record<string, { user: UserAccount; pass: st
   "security@apex.com": {
     user: {
       email: "security@apex.com",
-      name: "Marcus Vance",
+      name: "Nuwan Fernando",
       role: "Security Operations",
       avatarColor: "bg-rose-600",
     },
@@ -36,7 +36,7 @@ export const HARDCODED_ADMIN_USERS: Record<string, { user: UserAccount; pass: st
   "manager@apex.com": {
     user: {
       email: "manager@apex.com",
-      name: "Elena Rostova",
+      name: "Chamari Silva",
       role: "IT Fleet Manager",
       avatarColor: "bg-amber-600",
     },
@@ -45,7 +45,7 @@ export const HARDCODED_ADMIN_USERS: Record<string, { user: UserAccount; pass: st
   "support@apex.com": {
     user: {
       email: "support@apex.com",
-      name: "David Kim",
+      name: "Pathum Jayawardena",
       role: "IT Helpdesk Specialist",
       avatarColor: "bg-emerald-600",
     },

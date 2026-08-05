@@ -1,26 +1,27 @@
-# Python & Virtual Env
+# Environment & Temporary Files
+.env
+.env.local
+*.log
+temp/
+*.tmp
+
+# Deploy Guide (Ignored per user requirement)
+deploy.md
+
+# Python Cache & Virtual Environments
 __pycache__/
 *.py[cod]
 *$py.class
 .venv/
-env/
 venv/
 ENV/
-*.log
 
-# Windows Telemetry Temp Files
-battery-report.html
-device_metrics.json
-
-# Node & Next.js
+# Node & Next.js Build Outputs
 node_modules/
 .next/
-frontend/node_modules/
-frontend/.next/
-frontend/out/
+out/
+build/
+dist/
 
-# IDE & OS Files
-.vscode/
-.idea/
-.DS_Store
-Thumbs.db
+# PowerCfg Reports
+apex_battery_report.html

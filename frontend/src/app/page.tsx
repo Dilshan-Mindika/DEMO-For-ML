@@ -18,13 +18,11 @@ import {
   Server,
   Users,
   ChevronDown,
-  Lock,
   Mail,
   Key,
-  LogOut,
-  UserCheck
+  LogOut
 } from "lucide-react";
-import { authenticateUser, HARDCODED_ADMIN_USERS, UserAccount } from "./auth";
+import { authenticateUser, UserAccount } from "./auth";
 
 interface TelemetryData {
   device_name: string;
@@ -97,13 +95,13 @@ interface FleetSummary {
   avg_edhi: number;
 }
 
-const API_BASE_URL = "http://127.0.0.1:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
 
 export default function DashboardPage() {
   // Authentication State
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
-  const [loginEmail, setLoginEmail] = useState<string>("admin@apex.com");
-  const [loginPassword, setLoginPassword] = useState<string>("admin123");
+  const [loginEmail, setLoginEmail] = useState<string>("");
+  const [loginPassword, setLoginPassword] = useState<string>("");
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Dashboard Data State
@@ -135,7 +133,7 @@ export default function DashboardPage() {
       localStorage.setItem("apex_user", JSON.stringify(user));
       fetchPrediction();
     } else {
-      setAuthError("Invalid administrator credentials. Please check email or password.");
+      setAuthError("Invalid administrator credentials. Access denied.");
     }
   };
 
@@ -300,37 +298,6 @@ export default function DashboardPage() {
               Sign In to Fleet Portal
             </button>
           </form>
-
-          {/* Quick Select Preset Admin Credentials */}
-          <div className="mt-8 pt-6 border-t border-white/10">
-            <span className="text-[11px] font-semibold text-gray-400 uppercase tracking-wider block mb-3 text-center">
-              Quick Login (5 Hardcoded Accounts)
-            </span>
-
-            <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
-              {Object.values(HARDCODED_ADMIN_USERS).map((acc) => (
-                <button
-                  key={acc.user.email}
-                  onClick={() => {
-                    setLoginEmail(acc.user.email);
-                    setLoginPassword(acc.pass);
-                  }}
-                  className="w-full text-left bg-white/5 hover:bg-blue-500/10 border border-white/5 hover:border-blue-500/30 p-2.5 rounded-lg text-xs flex items-center justify-between transition-all group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <span className={`w-2 h-2 rounded-full ${acc.user.avatarColor}`} />
-                    <div>
-                      <strong className="block text-white font-medium">{acc.user.name}</strong>
-                      <span className="text-[10px] text-gray-400">{acc.user.email}</span>
-                    </div>
-                  </div>
-                  <span className="text-[10px] bg-white/10 group-hover:bg-blue-500/20 text-gray-300 px-2 py-0.5 rounded font-mono">
-                    {acc.pass}
-                  </span>
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     );

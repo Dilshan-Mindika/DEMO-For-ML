@@ -10,17 +10,17 @@
 
 ---
 
-## 🔐 Enterprise Admin Login Credentials (5 Static Accounts)
+## 🔐 Enterprise Admin Login Credentials (5 Accounts)
 
-The dashboard includes a glassmorphic authentication system supporting 5 hardcoded enterprise administrator accounts:
+The dashboard includes a glassmorphic authentication system supporting 5 hardcoded administrator accounts:
 
 | Administrator Email | Password | Name | Role |
 | :--- | :--- | :--- | :--- |
-| `admin@apex.com` | `admin123` | **Alex Mercer** | Lead IT Administrator |
-| `sysadmin@apex.com` | `sysadmin123` | **Sarah Chen** | System Administrator |
-| `security@apex.com` | `security123` | **Marcus Vance** | Security Operations |
-| `manager@apex.com` | `manager123` | **Elena Rostova** | IT Fleet Manager |
-| `support@apex.com` | `support123` | **David Kim** | IT Helpdesk Specialist |
+| `admin@apex.com` | `admin123` | **Dilshan Mindika** | Lead IT Administrator |
+| `sysadmin@apex.com` | `sysadmin123` | **Kasun Perera** | System Administrator |
+| `security@apex.com` | `security123` | **Nuwan Fernando** | Security Operations |
+| `manager@apex.com` | `manager123` | **Chamari Silva** | IT Fleet Manager |
+| `support@apex.com` | `support123` | **Pathum Jayawardena** | IT Helpdesk Specialist |
 
 ---
 
@@ -99,4 +99,4 @@ npm run dev
 
 ### Step 3: Log In to Dashboard
 1. Open **`http://localhost:3000`** in your browser.
-2. Sign in using any of the 5 admin accounts (e.g. `admin@apex.com` / `admin123`).
+2. Sign in using any of the 5 admin accounts (e.g. `admin@apex.com` / `admin123` for **Dilshan Mindika**).
