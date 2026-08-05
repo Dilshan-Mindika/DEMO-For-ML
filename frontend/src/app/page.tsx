@@ -104,7 +104,7 @@ interface FleetSummary {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
 
 export default function DashboardPage() {
-  // Theme State
+  // Theme State (Dark by default)
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
   // Active Tab State: 'telemetry' | 'explainability' | 'maintenance' | 'methodology'
@@ -265,7 +265,7 @@ export default function DashboardPage() {
   // Render Login View if unauthenticated
   if (!currentUser) {
     return (
-      <div className={`min-h-screen ${isDarkMode ? "bg-[#0B0F17] text-white" : "bg-slate-50 text-slate-900"} flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-300`}>
+      <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${isDarkMode ? "dark-mode" : "light-mode"} flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-300`}>
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
 
@@ -274,46 +274,46 @@ export default function DashboardPage() {
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/30 mx-auto mb-4">
               <Cpu className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold font-outfit">ApexPulse Enterprise</h1>
-            <p className="text-xs text-gray-400 mt-1">University Final Year Research Portal</p>
+            <h1 className="text-2xl font-bold font-outfit text-[var(--text-heading)]">ApexPulse Enterprise</h1>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">University Final Year Research Portal</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1.5">
+              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                 Administrator Email
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-blue-400 absolute left-3.5 top-3.5" />
+                <Mail className="w-4 h-4 text-blue-500 absolute left-3.5 top-3.5" />
                 <input
                   type="email"
                   required
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder="admin@apex.com"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-gray-400 mb-1.5">
+              <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
                 Password
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-indigo-400 absolute left-3.5 top-3.5" />
+                <Lock className="w-4 h-4 text-indigo-500 absolute left-3.5 top-3.5" />
                 <input
                   type={showPassword ? "text" : "password"}
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3.5 top-3 text-gray-400 hover:text-white transition-colors"
+                  className="absolute right-3.5 top-3 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -321,7 +321,7 @@ export default function DashboardPage() {
             </div>
 
             {authError && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs flex items-center gap-2">
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-500 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                 <span>{authError}</span>
               </div>
@@ -375,17 +375,17 @@ export default function DashboardPage() {
   const badge = getStatusBadge(prediction?.status_level);
 
   return (
-    <div className={`flex min-h-screen ${isDarkMode ? "dark-mode" : "light-mode"} transition-colors duration-300`}>
+    <div className={`flex min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${isDarkMode ? "dark-mode" : "light-mode"} transition-colors duration-300`}>
       {/* Sidebar Navigation */}
-      <aside className="w-64 bg-[#0F172A]/80 backdrop-blur-xl border-r border-white/10 p-6 flex flex-col justify-between hidden md:flex">
+      <aside className="w-64 bg-[var(--bg-sidebar)] border-r border-[var(--border-card)] p-6 flex flex-col justify-between hidden md:flex transition-colors duration-300">
         <div>
           <div className="flex items-center gap-3 mb-8">
             <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
               <Cpu className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h2 className="font-bold text-lg leading-tight font-outfit">ApexPulse</h2>
-              <span className="text-[11px] text-blue-400 uppercase tracking-wider font-semibold block">
+              <h2 className="font-bold text-lg leading-tight font-outfit text-[var(--text-heading)]">ApexPulse</h2>
+              <span className="text-[11px] text-blue-500 uppercase tracking-wider font-semibold block">
                 Research Portal
               </span>
             </div>
@@ -398,7 +398,7 @@ export default function DashboardPage() {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === "telemetry"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
               }`}
             >
               <Activity className="w-4 h-4" />
@@ -410,7 +410,7 @@ export default function DashboardPage() {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === "explainability"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
               }`}
             >
               <Sliders className="w-4 h-4" />
@@ -422,7 +422,7 @@ export default function DashboardPage() {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === "maintenance"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
               }`}
             >
               <Wrench className="w-4 h-4" />
@@ -434,7 +434,7 @@ export default function DashboardPage() {
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === "methodology"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
-                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
               }`}
             >
               <BookOpen className="w-4 h-4" />
@@ -444,19 +444,19 @@ export default function DashboardPage() {
         </div>
 
         {/* Sidebar Footer & Bottom Profile Card */}
-        <div className="pt-6 border-t border-white/10 space-y-4">
+        <div className="pt-6 border-t border-[var(--border-card)] space-y-4">
           {/* Theme Toggle Switcher */}
-          <div className="flex items-center justify-between bg-white/5 p-2.5 rounded-xl">
-            <span className="text-xs font-semibold text-gray-400 flex items-center gap-2">
-              {isDarkMode ? <Moon className="w-3.5 h-3.5 text-indigo-400" /> : <Sun className="w-3.5 h-3.5 text-amber-400" />}
+          <div className="flex items-center justify-between bg-[var(--bg-input)] p-2.5 rounded-xl border border-[var(--border-input)]">
+            <span className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-2">
+              {isDarkMode ? <Moon className="w-3.5 h-3.5 text-indigo-400" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
               {isDarkMode ? "Dark Theme" : "Light Theme"}
             </span>
             <button
               onClick={toggleTheme}
-              className="w-9 h-5 bg-white/10 rounded-full p-0.5 transition-colors relative"
+              className="w-9 h-5 bg-slate-300 dark:bg-slate-700 rounded-full p-0.5 transition-colors relative"
             >
               <div
-                className={`w-4 h-4 rounded-full bg-blue-500 shadow-md transition-transform ${
+                className={`w-4 h-4 rounded-full bg-blue-600 shadow-md transition-transform ${
                   isDarkMode ? "translate-x-4" : "translate-x-0"
                 }`}
               />
@@ -464,20 +464,20 @@ export default function DashboardPage() {
           </div>
 
           {/* Active Admin Profile Card (Moved to Bottom) */}
-          <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center justify-between">
+          <div className="bg-[var(--bg-input)] border border-[var(--border-input)] p-3 rounded-xl flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className={`w-8 h-8 rounded-full ${currentUser.avatarColor} flex items-center justify-center font-bold text-xs text-white`}>
                 {currentUser.name.charAt(0)}
               </div>
               <div className="overflow-hidden">
-                <strong className="block text-xs font-semibold truncate text-white">{currentUser.name}</strong>
-                <small className="text-[10px] text-gray-400 block truncate">{currentUser.role}</small>
+                <strong className="block text-xs font-semibold truncate text-[var(--text-heading)]">{currentUser.name}</strong>
+                <small className="text-[10px] text-[var(--text-secondary)] block truncate">{currentUser.role}</small>
               </div>
             </div>
             <button
               onClick={handleLogout}
               title="Logout"
-              className="text-gray-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors"
+              className="text-[var(--text-muted)] hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors"
             >
               <LogOut className="w-4 h-4" />
             </button>
@@ -486,14 +486,14 @@ export default function DashboardPage() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 md:p-10 overflow-y-auto">
+      <main className="flex-1 p-6 md:p-10 overflow-y-auto bg-[var(--bg-primary)] transition-colors duration-300">
         {/* Header Bar */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">
               <Sparkles className="w-3.5 h-3.5" /> University Final Year Research Project
             </div>
-            <h1 className="text-2xl md:text-3xl font-bold font-outfit">
+            <h1 className="text-2xl md:text-3xl font-bold font-outfit text-[var(--text-heading)]">
               {activeTab === "telemetry" && "Fleet Telemetry & XGBoost RUL Forecasting"}
               {activeTab === "explainability" && "XGBoost Feature Sensitivity & Explainability"}
               {activeTab === "maintenance" && "Prescriptive Maintenance & ROI Optimization"}
@@ -509,18 +509,18 @@ export default function DashboardPage() {
                   if (e.target.value === "local") fetchPrediction();
                   else selectDevice(e.target.value);
                 }}
-                className="bg-white/5 border border-white/10 px-4 py-2.5 rounded-full text-xs font-semibold focus:outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer"
+                className="bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] px-4 py-2.5 rounded-full text-xs font-semibold focus:outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer"
               >
-                <option value="local" className="bg-[#0F172A] text-white">
+                <option value="local" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>
                   📍 Local Host ({telemetry?.device_name || "Device"})
                 </option>
                 {devicesList.map((d) => (
-                  <option key={d.device_id} value={d.device_id} className="bg-[#0F172A] text-white">
+                  <option key={d.device_id} value={d.device_id} className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>
                     💻 {d.device_name} ({d.device_model})
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-gray-400 absolute right-3 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-3.5 h-3.5 text-[var(--text-muted)] absolute right-3 top-3.5 pointer-events-none" />
             </div>
 
             <button
@@ -535,11 +535,11 @@ export default function DashboardPage() {
         </header>
 
         {error && (
-          <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-sm flex items-center gap-3">
+          <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-500 text-sm flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 flex-shrink-0" />
             <div>
               <strong>Backend API Connection Issue:</strong> {error}
-              <div className="text-xs text-rose-400 mt-1">
+              <div className="text-xs text-rose-500 mt-1">
                 Make sure Flask backend server is listening on port 5000 (`python backend/app.py`).
               </div>
             </div>
@@ -550,42 +550,42 @@ export default function DashboardPage() {
         {fleetSummary && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             <div className="glass-card p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/15 text-blue-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/15 text-blue-500 flex items-center justify-center">
                 <Users className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[11px] text-gray-400 uppercase font-semibold block">Monitored Laptops</span>
-                <strong className="text-xl font-bold font-outfit">{fleetSummary.total_devices}</strong>
+                <span className="text-[11px] text-[var(--text-secondary)] uppercase font-semibold block">Monitored Laptops</span>
+                <strong className="text-xl font-bold font-outfit text-[var(--text-heading)]">{fleetSummary.total_devices}</strong>
               </div>
             </div>
 
             <div className="glass-card p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
                 <ShieldCheck className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[11px] text-gray-400 uppercase font-semibold block">Healthy Fleet</span>
-                <strong className="text-xl font-bold font-outfit text-emerald-400">{fleetSummary.healthy_count}</strong>
+                <span className="text-[11px] text-[var(--text-secondary)] uppercase font-semibold block">Healthy Fleet</span>
+                <strong className="text-xl font-bold font-outfit text-emerald-500">{fleetSummary.healthy_count}</strong>
               </div>
             </div>
 
             <div className="glass-card p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/15 text-amber-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center">
                 <Clock className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[11px] text-gray-400 uppercase font-semibold block">Monitor Devices</span>
-                <strong className="text-xl font-bold font-outfit text-amber-400">{fleetSummary.monitor_count}</strong>
+                <span className="text-[11px] text-[var(--text-secondary)] uppercase font-semibold block">Monitor Devices</span>
+                <strong className="text-xl font-bold font-outfit text-amber-500">{fleetSummary.monitor_count}</strong>
               </div>
             </div>
 
             <div className="glass-card p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-rose-500/15 text-rose-500 flex items-center justify-center">
                 <AlertTriangle className="w-5 h-5" />
               </div>
               <div>
-                <span className="text-[11px] text-gray-400 uppercase font-semibold block">Action Required</span>
-                <strong className="text-xl font-bold font-outfit text-rose-400">{fleetSummary.replacement_count}</strong>
+                <span className="text-[11px] text-[var(--text-secondary)] uppercase font-semibold block">Action Required</span>
+                <strong className="text-xl font-bold font-outfit text-rose-500">{fleetSummary.replacement_count}</strong>
               </div>
             </div>
           </div>
@@ -597,10 +597,10 @@ export default function DashboardPage() {
             {/* Hero RUL Forecast Gauge Banner */}
             <section className="col-span-12 glass-card p-6 md:p-8 relative overflow-hidden">
               <div className="flex justify-between items-center mb-6">
-                <span className="bg-blue-500/15 text-blue-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                <span className="bg-blue-500/15 text-blue-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2">
                   <Sparkles className="w-3.5 h-3.5" /> XGBoost Regressor RUL Forecast
                 </span>
-                <span className="text-xs text-gray-400">
+                <span className="text-xs text-[var(--text-secondary)]">
                   Host: <strong>{telemetry?.device_name || "--"}</strong> • Updated: {prediction ? new Date(prediction.timestamp).toLocaleTimeString() : "--"}
                 </span>
               </div>
@@ -608,12 +608,12 @@ export default function DashboardPage() {
               <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-6">
                 <div>
                   <div className="flex items-baseline gap-3">
-                    <span className="text-6xl md:text-7xl font-extrabold text-white font-outfit">
+                    <span className="text-6xl md:text-7xl font-extrabold font-outfit text-[var(--text-heading)]">
                       {prediction ? prediction.rul_months.toFixed(1) : "--"}
                     </span>
-                    <span className="text-xl text-gray-400 font-semibold">Months</span>
+                    <span className="text-xl text-[var(--text-secondary)] font-semibold">Months</span>
                   </div>
-                  <div className="text-sm text-gray-400 mt-2 font-medium">
+                  <div className="text-sm text-[var(--text-secondary)] mt-2 font-medium">
                     Forecasted Remaining Useful Life (RUL)
                   </div>
                 </div>
@@ -623,7 +623,7 @@ export default function DashboardPage() {
                   className="w-full lg:max-w-md p-5 rounded-2xl border flex items-center gap-5 transition-all"
                   style={{
                     borderColor: badge.color,
-                    backgroundColor: "rgba(255, 255, 255, 0.03)",
+                    backgroundColor: "var(--bg-input)",
                   }}
                 >
                   <div
@@ -633,7 +633,7 @@ export default function DashboardPage() {
                     {badge.icon}
                   </div>
                   <div>
-                    <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold block">
+                    <span className="text-xs text-[var(--text-secondary)] uppercase tracking-wider font-semibold block">
                       Enterprise Recommendation
                     </span>
                     <h3 className="text-xl font-bold font-outfit" style={{ color: badge.color }}>
@@ -644,9 +644,9 @@ export default function DashboardPage() {
               </div>
 
               {/* Profile Inputs */}
-              <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs">
+              <div className="pt-4 border-t border-[var(--border-card)] flex flex-wrap items-center justify-between gap-4 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-400">AI Usage Profile:</span>
+                  <span className="text-[var(--text-secondary)]">AI Usage Profile:</span>
                   <span className="bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-lg font-bold">
                     {mlInput?.usage_profile || "Normal"}
                   </span>
@@ -654,7 +654,7 @@ export default function DashboardPage() {
 
                 <div className="flex items-center gap-6">
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-400">Device Age (Months):</span>
+                    <span className="text-[var(--text-secondary)]">Device Age (Months):</span>
                     <input
                       type="number"
                       value={manualAge}
@@ -663,12 +663,12 @@ export default function DashboardPage() {
                         setManualAge(val);
                         fetchPrediction(val, dailyUsage);
                       }}
-                      className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-center font-bold text-white focus:outline-none focus:border-blue-500"
+                      className="w-16 bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-heading)] rounded-lg px-2 py-1 text-center font-bold focus:outline-none focus:border-blue-500"
                     />
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-400">Daily Usage (Hours):</span>
+                    <span className="text-[var(--text-secondary)]">Daily Usage (Hours):</span>
                     <input
                       type="number"
                       step="0.5"
@@ -678,7 +678,7 @@ export default function DashboardPage() {
                         setDailyUsage(val);
                         fetchPrediction(manualAge, val);
                       }}
-                      className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-center font-bold text-white focus:outline-none focus:border-blue-500"
+                      className="w-16 bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-heading)] rounded-lg px-2 py-1 text-center font-bold focus:outline-none focus:border-blue-500"
                     />
                   </div>
                 </div>
@@ -688,87 +688,87 @@ export default function DashboardPage() {
             {/* Hardware Metrics Cards */}
             <div className="col-span-12 lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="glass-card p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center flex-shrink-0">
                   <Battery className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs text-gray-400 uppercase font-semibold block">Battery Health</span>
-                  <h2 className="text-2xl font-bold font-outfit mt-0.5">
+                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Battery Health</span>
+                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
                     {mlInput ? `${mlInput.battery_health.toFixed(1)}%` : "--%"}
                   </h2>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-[var(--text-muted)] mt-1">
                     {mlInput ? `${mlInput.battery_cycles} Cycles` : "--"} • {telemetry?.power_plugged ? "AC Power" : "Battery"}
                   </div>
                 </div>
               </div>
 
               <div className="glass-card p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center flex-shrink-0">
                   <HardDrive className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs text-gray-400 uppercase font-semibold block">SSD Health</span>
-                  <h2 className="text-2xl font-bold font-outfit mt-0.5">
+                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">SSD Health</span>
+                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
                     {mlInput ? `${mlInput.ssd_health.toFixed(1)}%` : "--%"}
                   </h2>
-                  <div className="text-xs text-gray-500 mt-1">Physical Drive Wear Status</div>
+                  <div className="text-xs text-[var(--text-muted)] mt-1">Physical Drive Wear Status</div>
                 </div>
               </div>
 
               <div className="glass-card p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center flex-shrink-0">
                   <Thermometer className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs text-gray-400 uppercase font-semibold block">Avg CPU Temp</span>
-                  <h2 className="text-2xl font-bold font-outfit mt-0.5">
+                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Avg CPU Temp</span>
+                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
                     {mlInput ? `${mlInput.temperature.toFixed(1)} °C` : "-- °C"}
                   </h2>
-                  <div className="text-xs text-gray-500 mt-1">Thermal Sensor Monitor</div>
+                  <div className="text-xs text-[var(--text-muted)] mt-1">Thermal Sensor Monitor</div>
                 </div>
               </div>
 
               <div className="glass-card p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center flex-shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-rose-500/15 text-rose-500 flex items-center justify-center flex-shrink-0">
                   <AlertTriangle className="w-6 h-6" />
                 </div>
                 <div>
-                  <span className="text-xs text-gray-400 uppercase font-semibold block">Shutdowns (30d)</span>
-                  <h2 className="text-2xl font-bold font-outfit mt-0.5">
+                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Shutdowns (30d)</span>
+                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
                     {mlInput ? mlInput.shutdown_count : "--"}
                   </h2>
-                  <div className="text-xs text-gray-500 mt-1">Kernel Power Logs</div>
+                  <div className="text-xs text-[var(--text-muted)] mt-1">Kernel Power Logs</div>
                 </div>
               </div>
             </div>
 
             {/* AI Scores Card */}
             <section className="col-span-12 lg:col-span-5 glass-card p-6 flex flex-col justify-between">
-              <h3 className="font-bold text-base font-outfit flex items-center gap-2 mb-4">
-                <Activity className="w-5 h-5 text-blue-400" /> AI Agent Calculations
+              <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
+                <Activity className="w-5 h-5 text-blue-500" /> AI Agent Calculations
               </h3>
 
               <div className="space-y-6">
                 <div>
                   <div className="flex justify-between text-xs font-semibold mb-1.5">
-                    <span>Performance Score</span>
-                    <span className="text-blue-400">{mlInput ? `${mlInput.performance_score.toFixed(1)} / 100` : "--"}</span>
+                    <span className="text-[var(--text-secondary)]">Performance Score</span>
+                    <span className="text-blue-500">{mlInput ? `${mlInput.performance_score.toFixed(1)} / 100` : "--"}</span>
                   </div>
-                  <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="w-full h-2.5 bg-[var(--bg-input)] rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700" style={{ width: `${mlInput?.performance_score || 0}%` }} />
                   </div>
-                  <small className="text-[11px] text-gray-500 mt-1 block">CPU, RAM & Disk Load Contention</small>
+                  <small className="text-[11px] text-[var(--text-muted)] mt-1 block">CPU, RAM & Disk Load Contention</small>
                 </div>
 
                 <div>
                   <div className="flex justify-between text-xs font-semibold mb-1.5">
-                    <span>Enterprise Device Health Index (EDHI)</span>
-                    <span className="text-emerald-400">{mlInput ? `${mlInput.edhi.toFixed(1)} / 100` : "--"}</span>
+                    <span className="text-[var(--text-secondary)]">Enterprise Device Health Index (EDHI)</span>
+                    <span className="text-emerald-500">{mlInput ? `${mlInput.edhi.toFixed(1)} / 100` : "--"}</span>
                   </div>
-                  <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
+                  <div className="w-full h-2.5 bg-[var(--bg-input)] rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all duration-700" style={{ width: `${mlInput?.edhi || 0}%` }} />
                   </div>
-                  <small className="text-[11px] text-gray-500 mt-1 block">Multi-Factor Holistic Integrity Index</small>
+                  <small className="text-[11px] text-[var(--text-muted)] mt-1 block">Multi-Factor Holistic Integrity Index</small>
                 </div>
               </div>
             </section>
@@ -776,14 +776,14 @@ export default function DashboardPage() {
             {/* Monitored Fleet Inventory Table */}
             {devicesList.length > 0 && (
               <section className="col-span-12 glass-card p-6">
-                <h3 className="font-bold text-base font-outfit flex items-center gap-2 mb-4">
-                  <Users className="w-5 h-5 text-blue-400" /> Monitored Fleet Inventory
+                <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
+                  <Users className="w-5 h-5 text-blue-500" /> Monitored Fleet Inventory
                 </h3>
 
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse">
                     <thead>
-                      <tr className="border-b border-white/10 text-gray-400">
+                      <tr className="border-b border-[var(--table-header-border)] text-[var(--text-secondary)]">
                         <th className="py-3 px-4">Device Hostname</th>
                         <th className="py-3 px-4">Model & Serial</th>
                         <th className="py-3 px-4">RUL Forecast</th>
@@ -793,19 +793,19 @@ export default function DashboardPage() {
                         <th className="py-3 px-4">Action</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-white/5">
+                    <tbody className="divide-y divide-[var(--table-header-border)]">
                       {devicesList.map((dev) => (
-                        <tr key={dev.device_id} className="hover:bg-white/[0.02]">
-                          <td className="py-3 px-4 font-semibold text-white">{dev.device_name}</td>
-                          <td className="py-3 px-4 text-gray-400">{dev.device_model} ({dev.serial_number})</td>
-                          <td className="py-3 px-4 font-bold text-blue-400">{dev.rul_months.toFixed(1)} Months</td>
+                        <tr key={dev.device_id} className="hover:bg-[var(--table-hover)] transition-colors">
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">{dev.device_name}</td>
+                          <td className="py-3 px-4 text-[var(--text-secondary)]">{dev.device_model} ({dev.serial_number})</td>
+                          <td className="py-3 px-4 font-bold text-blue-500">{dev.rul_months.toFixed(1)} Months</td>
                           <td className="py-3 px-4 font-semibold" style={{ color: dev.status_color }}>{dev.recommendation}</td>
-                          <td className="py-3 px-4 font-mono">{dev.battery_health.toFixed(1)}%</td>
-                          <td className="py-3 px-4 font-mono text-emerald-400">{dev.edhi.toFixed(1)}</td>
+                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{dev.battery_health.toFixed(1)}%</td>
+                          <td className="py-3 px-4 font-mono text-emerald-500 font-bold">{dev.edhi.toFixed(1)}</td>
                           <td className="py-3 px-4">
                             <button
                               onClick={() => selectDevice(dev.device_id)}
-                              className="bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 px-3 py-1 rounded-lg text-[11px] font-semibold"
+                              className="bg-blue-500/20 hover:bg-blue-500/40 text-blue-500 dark:text-blue-300 px-3 py-1 rounded-lg text-[11px] font-semibold transition-colors"
                             >
                               Inspect Telemetry
                             </button>
@@ -825,10 +825,10 @@ export default function DashboardPage() {
           <div className="grid grid-cols-12 gap-6">
             {/* Feature Attribution Matrix */}
             <section className="col-span-12 lg:col-span-6 glass-card p-6">
-              <h3 className="font-bold text-base font-outfit flex items-center gap-2 mb-2">
-                <BarChart3 className="w-5 h-5 text-indigo-400" /> XGBoost Feature Weight Attributions
+              <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-2">
+                <BarChart3 className="w-5 h-5 text-indigo-500" /> XGBoost Feature Weight Attributions
               </h3>
-              <p className="text-xs text-gray-400 mb-6">
+              <p className="text-xs text-[var(--text-secondary)] mb-6">
                 Relative feature impact ranking derived from tree split gain and SHAP values.
               </p>
 
@@ -843,10 +843,10 @@ export default function DashboardPage() {
                 ].map((f) => (
                   <div key={f.name}>
                     <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span>{f.label}</span>
-                      <span className="font-mono text-gray-300">{f.weight}% Weight</span>
+                      <span className="text-[var(--text-primary)]">{f.label}</span>
+                      <span className="font-mono text-[var(--text-secondary)]">{f.weight}% Weight</span>
                     </div>
-                    <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="w-full h-2.5 bg-[var(--bg-input)] rounded-full overflow-hidden">
                       <div className={`h-full bg-gradient-to-r ${f.color} rounded-full`} style={{ width: `${f.weight * 3.2}%` }} />
                     </div>
                   </div>
@@ -857,52 +857,52 @@ export default function DashboardPage() {
             {/* Interactive What-If Sensitivity Simulator */}
             <section className="col-span-12 lg:col-span-6 glass-card p-6 flex flex-col justify-between">
               <div>
-                <h3 className="font-bold text-base font-outfit flex items-center gap-2 mb-2">
-                  <Sliders className="w-5 h-5 text-blue-400" /> Interactive Sensitivity Simulator
+                <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-2">
+                  <Sliders className="w-5 h-5 text-blue-500" /> Interactive Sensitivity Simulator
                 </h3>
-                <p className="text-xs text-gray-400 mb-6">
+                <p className="text-xs text-[var(--text-secondary)] mb-6">
                   Adjust parameter sliders to observe real-time feature impact on RUL predictions.
                 </p>
 
                 <div className="space-y-4 text-xs">
                   <div>
-                    <div className="flex justify-between font-semibold mb-1">
-                      <span>Device Age: <strong className="text-blue-400">{simAge} Months</strong></span>
+                    <div className="flex justify-between font-semibold mb-1 text-[var(--text-primary)]">
+                      <span>Device Age: <strong className="text-blue-500">{simAge} Months</strong></span>
                     </div>
                     <input type="range" min="1" max="60" value={simAge} onChange={(e) => setSimAge(Number(e.target.value))} className="w-full accent-blue-500 cursor-pointer" />
                   </div>
 
                   <div>
-                    <div className="flex justify-between font-semibold mb-1">
-                      <span>Battery Health: <strong className="text-emerald-400">{simBatHealth}%</strong></span>
+                    <div className="flex justify-between font-semibold mb-1 text-[var(--text-primary)]">
+                      <span>Battery Health: <strong className="text-emerald-500">{simBatHealth}%</strong></span>
                     </div>
                     <input type="range" min="10" max="100" value={simBatHealth} onChange={(e) => setSimBatHealth(Number(e.target.value))} className="w-full accent-emerald-500 cursor-pointer" />
                   </div>
 
                   <div>
-                    <div className="flex justify-between font-semibold mb-1">
-                      <span>Battery Cycles: <strong className="text-indigo-400">{simCycles} Cycles</strong></span>
+                    <div className="flex justify-between font-semibold mb-1 text-[var(--text-primary)]">
+                      <span>Battery Cycles: <strong className="text-indigo-500">{simCycles} Cycles</strong></span>
                     </div>
                     <input type="range" min="10" max="1000" step="10" value={simCycles} onChange={(e) => setSimCycles(Number(e.target.value))} className="w-full accent-indigo-500 cursor-pointer" />
                   </div>
 
                   <div>
-                    <div className="flex justify-between font-semibold mb-1">
-                      <span>SSD Health: <strong className="text-amber-400">{simSSDHealth}%</strong></span>
+                    <div className="flex justify-between font-semibold mb-1 text-[var(--text-primary)]">
+                      <span>SSD Health: <strong className="text-amber-500">{simSSDHealth}%</strong></span>
                     </div>
                     <input type="range" min="10" max="100" value={simSSDHealth} onChange={(e) => setSimSSDHealth(Number(e.target.value))} className="w-full accent-amber-500 cursor-pointer" />
                   </div>
                 </div>
               </div>
 
-              <div className="mt-6 pt-4 border-t border-white/10 bg-white/5 p-4 rounded-xl flex items-center justify-between">
+              <div className="mt-6 pt-4 border-t border-[var(--border-card)] bg-[var(--bg-input)] p-4 rounded-xl flex items-center justify-between">
                 <div>
-                  <span className="text-[11px] text-gray-400 uppercase font-semibold block">Simulated RUL Impact</span>
-                  <strong className="text-2xl font-bold font-outfit text-blue-400">
+                  <span className="text-[11px] text-[var(--text-secondary)] uppercase font-semibold block">Simulated RUL Impact</span>
+                  <strong className="text-2xl font-bold font-outfit text-blue-500">
                     {((simBatHealth * 0.25) + (simSSDHealth * 0.15) + (48 - simAge * 0.6)).toFixed(1)} Months
                   </strong>
                 </div>
-                <span className="bg-blue-500/20 text-blue-300 text-xs px-3 py-1 rounded-full font-semibold">
+                <span className="bg-blue-500/20 text-blue-500 dark:text-blue-300 text-xs px-3 py-1 rounded-full font-semibold">
                   Dynamic Forecast
                 </span>
               </div>
@@ -916,39 +916,39 @@ export default function DashboardPage() {
             {/* Component Maintenance Actions */}
             <section className="col-span-12 glass-card p-6">
               <div className="mb-6">
-                <h3 className="font-bold text-base font-outfit flex items-center gap-2">
-                  <Wrench className="w-5 h-5 text-indigo-400" /> Prescriptive Component Maintenance Simulation
+                <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2">
+                  <Wrench className="w-5 h-5 text-indigo-500" /> Prescriptive Component Maintenance Simulation
                 </h3>
-                <p className="text-xs text-gray-400 mt-1">
+                <p className="text-xs text-[var(--text-secondary)] mt-1">
                   Execute simulated hardware refurbishments to quantify life-extension and financial ROI.
                 </p>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <button onClick={() => triggerMaintenance("replace_battery")} disabled={loading} className="bg-white/5 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/40 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
-                  <Battery className="w-8 h-8 text-emerald-400 group-hover:scale-110 transition-transform" />
+                <button onClick={() => triggerMaintenance("replace_battery")} disabled={loading} className="bg-[var(--bg-input)] hover:bg-emerald-500/10 border border-[var(--border-input)] hover:border-emerald-500/40 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
+                  <Battery className="w-8 h-8 text-emerald-500 group-hover:scale-110 transition-transform" />
                   <div>
-                    <strong className="block text-sm">Replace Battery</strong>
-                    <span className="text-xs text-gray-400">Reset Health to 100% & Cycles to 0</span>
-                    <div className="text-[11px] text-emerald-400 font-bold mt-1">+14.2 Months RUL</div>
+                    <strong className="block text-sm text-[var(--text-heading)]">Replace Battery</strong>
+                    <span className="text-xs text-[var(--text-secondary)]">Reset Health to 100% & Cycles to 0</span>
+                    <div className="text-[11px] text-emerald-500 font-bold mt-1">+14.2 Months RUL</div>
                   </div>
                 </button>
 
-                <button onClick={() => triggerMaintenance("replace_ssd")} disabled={loading} className="bg-white/5 hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/40 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
-                  <HardDrive className="w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform" />
+                <button onClick={() => triggerMaintenance("replace_ssd")} disabled={loading} className="bg-[var(--bg-input)] hover:bg-blue-500/10 border border-[var(--border-input)] hover:border-blue-500/40 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
+                  <HardDrive className="w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform" />
                   <div>
-                    <strong className="block text-sm">Replace SSD Drive</strong>
-                    <span className="text-xs text-gray-400">Reset SSD Wear to 100%</span>
-                    <div className="text-[11px] text-blue-400 font-bold mt-1">+8.5 Months RUL</div>
+                    <strong className="block text-sm text-[var(--text-heading)]">Replace SSD Drive</strong>
+                    <span className="text-xs text-[var(--text-secondary)]">Reset SSD Wear to 100%</span>
+                    <div className="text-[11px] text-blue-500 font-bold mt-1">+8.5 Months RUL</div>
                   </div>
                 </button>
 
-                <button onClick={() => triggerMaintenance("full_overhaul")} disabled={loading} className="bg-gradient-to-br from-indigo-600/30 to-emerald-600/30 border border-indigo-500/40 hover:border-indigo-400 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
-                  <Sparkles className="w-8 h-8 text-indigo-300 group-hover:scale-110 transition-transform" />
+                <button onClick={() => triggerMaintenance("full_overhaul")} disabled={loading} className="bg-gradient-to-br from-indigo-600/20 to-emerald-600/20 border border-indigo-500/40 hover:border-indigo-400 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
+                  <Sparkles className="w-8 h-8 text-indigo-500 dark:text-indigo-300 group-hover:scale-110 transition-transform" />
                   <div>
-                    <strong className="block text-sm text-white">Full Refurbish Overhaul</strong>
-                    <span className="text-xs text-gray-300">New Battery + SSD + Thermal Service</span>
-                    <div className="text-[11px] text-indigo-300 font-bold mt-1">+22.8 Months RUL</div>
+                    <strong className="block text-sm text-[var(--text-heading)]">Full Refurbish Overhaul</strong>
+                    <span className="text-xs text-[var(--text-secondary)]">New Battery + SSD + Thermal Service</span>
+                    <div className="text-[11px] text-indigo-500 dark:text-indigo-300 font-bold mt-1">+22.8 Months RUL</div>
                   </div>
                 </button>
               </div>
@@ -957,7 +957,7 @@ export default function DashboardPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-white/10 text-gray-400">
+                    <tr className="border-b border-[var(--table-header-border)] text-[var(--text-secondary)]">
                       <th className="py-3 px-4">Intervention Type</th>
                       <th className="py-3 px-4">Estimated Cost ($)</th>
                       <th className="py-3 px-4">RUL Life Extension</th>
@@ -965,33 +965,33 @@ export default function DashboardPage() {
                       <th className="py-3 px-4">Recommendation Status</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-white/5">
-                    <tr>
-                      <td className="py-3 px-4 font-semibold text-white flex items-center gap-2">
-                        <Battery className="w-4 h-4 text-emerald-400" /> Battery Replacement
+                  <tbody className="divide-y divide-[var(--table-header-border)]">
+                    <tr className="hover:bg-[var(--table-hover)]">
+                      <td className="py-3 px-4 font-semibold text-[var(--text-heading)] flex items-center gap-2">
+                        <Battery className="w-4 h-4 text-emerald-500" /> Battery Replacement
                       </td>
-                      <td className="py-3 px-4 font-mono">$85.00</td>
-                      <td className="py-3 px-4 font-bold text-emerald-400">+14.2 Months</td>
-                      <td className="py-3 px-4 font-mono text-blue-400">4.2x ROI</td>
-                      <td className="py-3 px-4"><span className="bg-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded font-semibold">Optimal</span></td>
+                      <td className="py-3 px-4 font-mono text-[var(--text-primary)]">$85.00</td>
+                      <td className="py-3 px-4 font-bold text-emerald-500">+14.2 Months</td>
+                      <td className="py-3 px-4 font-mono text-blue-500 font-semibold">4.2x ROI</td>
+                      <td className="py-3 px-4"><span className="bg-emerald-500/20 text-emerald-500 px-2.5 py-0.5 rounded font-semibold">Optimal</span></td>
                     </tr>
-                    <tr>
-                      <td className="py-3 px-4 font-semibold text-white flex items-center gap-2">
-                        <HardDrive className="w-4 h-4 text-blue-400" /> NVMe SSD Upgrade
+                    <tr className="hover:bg-[var(--table-hover)]">
+                      <td className="py-3 px-4 font-semibold text-[var(--text-heading)] flex items-center gap-2">
+                        <HardDrive className="w-4 h-4 text-blue-500" /> NVMe SSD Upgrade
                       </td>
-                      <td className="py-3 px-4 font-mono">$110.00</td>
-                      <td className="py-3 px-4 font-bold text-blue-400">+8.5 Months</td>
-                      <td className="py-3 px-4 font-mono text-blue-400">2.1x ROI</td>
-                      <td className="py-3 px-4"><span className="bg-blue-500/20 text-blue-400 px-2.5 py-0.5 rounded font-semibold">Recommended</span></td>
+                      <td className="py-3 px-4 font-mono text-[var(--text-primary)]">$110.00</td>
+                      <td className="py-3 px-4 font-bold text-blue-500">+8.5 Months</td>
+                      <td className="py-3 px-4 font-mono text-blue-500 font-semibold">2.1x ROI</td>
+                      <td className="py-3 px-4"><span className="bg-blue-500/20 text-blue-500 px-2.5 py-0.5 rounded font-semibold">Recommended</span></td>
                     </tr>
-                    <tr>
-                      <td className="py-3 px-4 font-semibold text-white flex items-center gap-2">
-                        <Sparkles className="w-4 h-4 text-indigo-400" /> Full Enterprise Refurbish
+                    <tr className="hover:bg-[var(--table-hover)]">
+                      <td className="py-3 px-4 font-semibold text-[var(--text-heading)] flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-indigo-500" /> Full Enterprise Refurbish
                       </td>
-                      <td className="py-3 px-4 font-mono">$175.00</td>
-                      <td className="py-3 px-4 font-bold text-indigo-400">+22.8 Months</td>
-                      <td className="py-3 px-4 font-mono text-indigo-400">5.6x ROI</td>
-                      <td className="py-3 px-4"><span className="bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded font-semibold">High Priority</span></td>
+                      <td className="py-3 px-4 font-mono text-[var(--text-primary)]">$175.00</td>
+                      <td className="py-3 px-4 font-bold text-indigo-500">+22.8 Months</td>
+                      <td className="py-3 px-4 font-mono text-indigo-500 font-semibold">5.6x ROI</td>
+                      <td className="py-3 px-4"><span className="bg-indigo-500/20 text-indigo-500 px-2.5 py-0.5 rounded font-semibold">High Priority</span></td>
                     </tr>
                   </tbody>
                 </table>
@@ -1005,31 +1005,31 @@ export default function DashboardPage() {
           <div className="grid grid-cols-12 gap-6">
             <section className="col-span-12 glass-card p-6 md:p-8">
               <div className="flex items-center gap-3 mb-6">
-                <div className="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400">
+                <div className="w-12 h-12 bg-blue-500/15 rounded-xl flex items-center justify-center text-blue-500">
                   <BookOpen className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold font-outfit">University Final Year Research Methodology</h2>
-                  <p className="text-xs text-gray-400">Enterprise Laptop Hardware Wear & Machine Learning RUL Prediction Architecture</p>
+                  <h2 className="text-xl font-bold font-outfit text-[var(--text-heading)]">University Final Year Research Methodology</h2>
+                  <p className="text-xs text-[var(--text-secondary)]">Enterprise Laptop Hardware Wear & Machine Learning RUL Prediction Architecture</p>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs text-gray-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs text-[var(--text-secondary)]">
                 <div className="space-y-4">
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                    <h4 className="font-bold text-sm text-white mb-2 flex items-center gap-2">
-                      <Cpu className="w-4 h-4 text-blue-400" /> 1. XGBoost Regression Pipeline
+                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                    <h4 className="font-bold text-sm text-[var(--text-heading)] mb-2 flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-blue-500" /> 1. XGBoost Regression Pipeline
                     </h4>
                     <p className="leading-relaxed">
-                      The predictive pipeline utilizes an <strong>Extreme Gradient Boosting (XGBoost) Regressor</strong> model wrapped in a Scikit-learn <code className="text-indigo-400">ColumnTransformer</code>. It encodes categorical telemetry (device model, usage profile) and normalizes continuous hardware signals.
+                      The predictive pipeline utilizes an <strong>Extreme Gradient Boosting (XGBoost) Regressor</strong> model wrapped in a Scikit-learn <code className="text-indigo-500">ColumnTransformer</code>. It encodes categorical telemetry (device model, usage profile) and normalizes continuous hardware signals.
                     </p>
                   </div>
 
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                    <h4 className="font-bold text-sm text-white mb-2 flex items-center gap-2">
-                      <Activity className="w-4 h-4 text-emerald-400" /> 2. Enterprise Device Health Index (EDHI) Formula
+                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                    <h4 className="font-bold text-sm text-[var(--text-heading)] mb-2 flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-emerald-500" /> 2. Enterprise Device Health Index (EDHI) Formula
                     </h4>
-                    <p className="leading-relaxed font-mono text-[11px] bg-black/30 p-2.5 rounded-lg border border-white/5 text-emerald-300 mb-2">
+                    <p className="leading-relaxed font-mono text-[11px] bg-[var(--bg-card)] p-2.5 rounded-lg border border-[var(--border-card)] text-emerald-500 mb-2">
                       EDHI = 0.30(BatHealth) + 0.25(SSDHealth) + 0.20(PerfScore) + 0.15(TempFactor) - 0.10(Shutdowns)
                     </p>
                     <p className="leading-relaxed">
@@ -1039,11 +1039,11 @@ export default function DashboardPage() {
                 </div>
 
                 <div className="space-y-4">
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                    <h4 className="font-bold text-sm text-white mb-2 flex items-center gap-2">
-                      <Server className="w-4 h-4 text-amber-400" /> 3. Automated Windows Telemetry Pipeline
+                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                    <h4 className="font-bold text-sm text-[var(--text-heading)] mb-2 flex items-center gap-2">
+                      <Server className="w-4 h-4 text-amber-500" /> 3. Automated Windows Telemetry Pipeline
                     </h4>
-                    <ul className="list-disc pl-4 space-y-1 text-gray-400">
+                    <ul className="list-disc pl-4 space-y-1 text-[var(--text-secondary)]">
                       <li><strong>WMI API:</strong> Computer model & BIOS serial numbers.</li>
                       <li><strong>Windows PowerCfg:</strong> Design capacity vs full charge capacity (battery wear %).</li>
                       <li><strong>PowerShell PhysicalDisk:</strong> NVMe storage integrity status.</li>
@@ -1051,9 +1051,9 @@ export default function DashboardPage() {
                     </ul>
                   </div>
 
-                  <div className="bg-white/5 p-4 rounded-xl border border-white/10">
-                    <h4 className="font-bold text-sm text-white mb-2 flex items-center gap-2">
-                      <CheckCircle2 className="w-4 h-4 text-purple-400" /> 4. Research Citation & Team
+                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                    <h4 className="font-bold text-sm text-[var(--text-heading)] mb-2 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-purple-500" /> 4. Research Citation & Team
                     </h4>
                     <p className="leading-relaxed">
                       Developed as a Final Year University Research Project focusing on enterprise hardware sustainability and AI-driven lifecycle optimization.
