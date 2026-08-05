@@ -24,11 +24,8 @@ import {
   Sun,
   Moon,
   Sliders,
-  FileText,
   BarChart3,
   CheckCircle2,
-  TrendingUp,
-  Info,
   BookOpen
 } from "lucide-react";
 import { authenticateUser, UserAccount } from "./auth";
@@ -133,12 +130,9 @@ export default function DashboardPage() {
 
   // What-If Interactive Sensitivity State
   const [simAge, setSimAge] = useState<number>(24);
-  const [simUsageHours, setSimUsageHours] = useState<number>(6.5);
   const [simCycles, setSimCycles] = useState<number>(250);
   const [simBatHealth, setSimBatHealth] = useState<number>(85);
   const [simSSDHealth, setSimSSDHealth] = useState<number>(90);
-  const [simTemp, setSimTemp] = useState<number>(52);
-  const [simResult, setSimResult] = useState<PredictionResult | null>(null);
 
   useEffect(() => {
     const savedUser = localStorage.getItem("apex_user");
@@ -206,7 +200,6 @@ export default function DashboardPage() {
         setSimCycles(ml.battery_cycles);
         setSimBatHealth(ml.battery_health);
         setSimSSDHealth(ml.ssd_health);
-        setSimTemp(ml.temperature);
       }
       fetchFleet();
     } catch (err: any) {
@@ -398,26 +391,6 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Active Admin Profile Card */}
-          <div className="bg-white/5 border border-white/10 p-3 rounded-xl mb-6 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-full ${currentUser.avatarColor} flex items-center justify-center font-bold text-xs text-white`}>
-                {currentUser.name.charAt(0)}
-              </div>
-              <div className="overflow-hidden">
-                <strong className="block text-xs font-semibold truncate text-white">{currentUser.name}</strong>
-                <small className="text-[10px] text-gray-400 block truncate">{currentUser.role}</small>
-              </div>
-            </div>
-            <button
-              onClick={handleLogout}
-              title="Logout"
-              className="text-gray-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          </div>
-
           {/* Multi-Tab Research Navigation Links */}
           <nav className="space-y-1.5">
             <button
@@ -470,8 +443,9 @@ export default function DashboardPage() {
           </nav>
         </div>
 
-        {/* Sidebar Footer & Theme Toggle */}
+        {/* Sidebar Footer & Bottom Profile Card */}
         <div className="pt-6 border-t border-white/10 space-y-4">
+          {/* Theme Toggle Switcher */}
           <div className="flex items-center justify-between bg-white/5 p-2.5 rounded-xl">
             <span className="text-xs font-semibold text-gray-400 flex items-center gap-2">
               {isDarkMode ? <Moon className="w-3.5 h-3.5 text-indigo-400" /> : <Sun className="w-3.5 h-3.5 text-amber-400" />}
@@ -489,12 +463,24 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          <div className="flex items-center gap-3">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-md shadow-emerald-400/50" />
-            <div>
-              <strong className="block text-xs font-semibold">Flask REST API</strong>
-              <small className="text-[11px] text-gray-400">Port 5000 Active</small>
+          {/* Active Admin Profile Card (Moved to Bottom) */}
+          <div className="bg-white/5 border border-white/10 p-3 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className={`w-8 h-8 rounded-full ${currentUser.avatarColor} flex items-center justify-center font-bold text-xs text-white`}>
+                {currentUser.name.charAt(0)}
+              </div>
+              <div className="overflow-hidden">
+                <strong className="block text-xs font-semibold truncate text-white">{currentUser.name}</strong>
+                <small className="text-[10px] text-gray-400 block truncate">{currentUser.role}</small>
+              </div>
             </div>
+            <button
+              onClick={handleLogout}
+              title="Logout"
+              className="text-gray-400 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </aside>
