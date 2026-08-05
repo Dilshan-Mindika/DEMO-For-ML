@@ -1,4 +1,9 @@
 import os
+import sys
+
+# Ensure project root is in sys.path when running `python backend/app.py` directly
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
@@ -107,4 +112,5 @@ def simulate_maintenance():
 
 
 if __name__ == "__main__":
+    print("[+] Starting Enterprise Laptop Lifecycle API on http://127.0.0.1:5000")
     app.run(host="127.0.0.1", port=5000, debug=True)

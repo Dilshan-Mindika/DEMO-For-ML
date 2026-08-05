@@ -1,5 +1,12 @@
+import os
+import sys
+
+# Ensure root directory is in sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 import unittest
 import pandas as pd
+
 from backend.core.collector import HardwareCollector
 from backend.core.agent import DeviceHealthAgent
 from backend.core.model_service import LifecyclePredictor
