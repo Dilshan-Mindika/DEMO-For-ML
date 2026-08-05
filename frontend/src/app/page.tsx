@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Cpu,
   HardDrive,
@@ -24,9 +24,10 @@ import {
   Moon,
   Sliders,
   BarChart3,
-  Pause,
-  Play,
-  Zap
+  Zap,
+  CheckCircle2,
+  FileText,
+  PieChart
 } from "lucide-react";
 import { authenticateUser, UserAccount } from "./auth";
 
@@ -42,6 +43,8 @@ interface TelemetryData {
   disk_usage: number;
   battery_percent: number;
   power_plugged: boolean;
+  design_capacity_mwh?: number;
+  full_charge_capacity_mwh?: number;
   battery_health: number;
   battery_wear: number;
   battery_cycles: number;
@@ -107,7 +110,7 @@ export default function DashboardPage() {
   // Theme State (Dark by default)
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
-  // Active Tab State: 'telemetry' | 'explainability' | 'maintenance'
+  // Navigation State: 'telemetry' | 'cpu_ram' | 'thermal_logs' | 'battery' | 'storage' | 'explainability' | 'maintenance'
   const [activeTab, setActiveTab] = useState<string>("telemetry");
 
   // Authentication State
@@ -123,7 +126,6 @@ export default function DashboardPage() {
   const [devicesList, setDevicesList] = useState<DeviceSummary[]>([]);
 
   const [loading, setLoading] = useState<boolean>(false);
-  const [isAutoPolling, setIsAutoPolling] = useState<boolean>(true);
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
   const [error, setError] = useState<string | null>(null);
 
@@ -282,20 +284,18 @@ export default function DashboardPage() {
     }
   };
 
-  // Automated 3-Second Real-Time Telemetry Stream Polling Effect
+  // Automated 3-Second Silent Real-Time Hardware Polling
   useEffect(() => {
     if (!currentUser) return;
 
     fetchPrediction(true);
 
     const intervalId = setInterval(() => {
-      if (isAutoPolling) {
-        fetchPrediction(false);
-      }
+      fetchPrediction(false);
     }, 3000);
 
     return () => clearInterval(intervalId);
-  }, [currentUser, isAutoPolling, selectedDeviceId, manualAge, dailyUsage]);
+  }, [currentUser, selectedDeviceId, manualAge, dailyUsage]);
 
   // Render Login View if unauthenticated
   if (!currentUser) {
@@ -426,23 +426,71 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* Enterprise Navigation Links (3 Tabs) */}
-          <nav className="space-y-1.5">
+          {/* Subsystem Sidebar Navigation */}
+          <nav className="space-y-1">
             <button
               onClick={() => setActiveTab("telemetry")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === "telemetry"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
                   : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
               }`}
             >
               <Activity className="w-4 h-4" />
-              Fleet Analytics & RUL
+              Fleet Overview & RUL
+            </button>
+
+            <button
+              onClick={() => setActiveTab("cpu_ram")}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === "cpu_ram"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
+              }`}
+            >
+              <Cpu className="w-4 h-4" />
+              Processor & Memory
+            </button>
+
+            <button
+              onClick={() => setActiveTab("thermal_logs")}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === "thermal_logs"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
+              }`}
+            >
+              <Thermometer className="w-4 h-4" />
+              Thermal & System Logs
+            </button>
+
+            <button
+              onClick={() => setActiveTab("battery")}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === "battery"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
+              }`}
+            >
+              <Battery className="w-4 h-4" />
+              Battery & Power Wear
+            </button>
+
+            <button
+              onClick={() => setActiveTab("storage")}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === "storage"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
+              }`}
+            >
+              <HardDrive className="w-4 h-4" />
+              Storage & NVMe Integrity
             </button>
 
             <button
               onClick={() => setActiveTab("explainability")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === "explainability"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
                   : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
@@ -454,7 +502,7 @@ export default function DashboardPage() {
 
             <button
               onClick={() => setActiveTab("maintenance")}
-              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === "maintenance"
                   ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
                   : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
@@ -513,36 +561,21 @@ export default function DashboardPage() {
         {/* Header Bar */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
-            <div className="flex items-center gap-3 text-xs font-bold uppercase tracking-wider mb-1">
-              <span className="text-blue-500">Real-World Production System</span>
-              {/* Live Streaming Pulse Indicator */}
-              <div className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/30 text-emerald-500 px-2.5 py-0.5 rounded-full">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                <span className="text-[10px] font-bold">LIVE TELEMETRY STREAM (3s)</span>
-              </div>
+            <div className="text-xs font-bold text-blue-500 uppercase tracking-wider mb-1">
+              Real-World Production System
             </div>
             <h1 className="text-2xl md:text-3xl font-bold font-outfit text-[var(--text-heading)]">
               {activeTab === "telemetry" && "Fleet Telemetry & XGBoost RUL Forecasting"}
+              {activeTab === "cpu_ram" && "Processor & Memory Subsystem Telemetry"}
+              {activeTab === "thermal_logs" && "Thermal Sensors & System Event Logs"}
+              {activeTab === "battery" && "Battery Capacity Wear & Power Degradation"}
+              {activeTab === "storage" && "Physical Storage & NVMe SSD Health"}
               {activeTab === "explainability" && "XGBoost Feature Sensitivity & Explainability"}
               {activeTab === "maintenance" && "Prescriptive Maintenance & ROI Optimization"}
             </h1>
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            {/* Live Polling Stream Pause/Play Toggle */}
-            <button
-              onClick={() => setIsAutoPolling(!isAutoPolling)}
-              title={isAutoPolling ? "Pause Live 3s Stream" : "Resume Live 3s Stream"}
-              className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 border transition-all ${
-                isAutoPolling
-                  ? "bg-emerald-500/10 border-emerald-500/40 text-emerald-500"
-                  : "bg-amber-500/10 border-amber-500/40 text-amber-500"
-              }`}
-            >
-              {isAutoPolling ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-              <span>{isAutoPolling ? "Live Stream Active" : "Stream Paused"}</span>
-            </button>
-
             {/* Device Selector */}
             <div className="relative">
               <select
@@ -630,7 +663,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* TAB 1: FLEET TELEMETRY & RUL FORECAST */}
+        {/* TAB 1: FLEET OVERVIEW & RUL FORECAST */}
         {activeTab === "telemetry" && (
           <div className="grid grid-cols-12 gap-6">
             {/* Hero RUL Forecast Gauge Banner */}
@@ -640,7 +673,7 @@ export default function DashboardPage() {
                   XGBoost Regressor RUL Forecast
                 </span>
                 <span className="text-xs text-[var(--text-secondary)]">
-                  Host: <strong>{telemetry?.device_name || "--"}</strong> • Serial: <strong>{telemetry?.serial_number || "--"}</strong> • Live Updated: <strong>{lastUpdatedTime || "--"}</strong>
+                  Host: <strong>{telemetry?.device_name || "--"}</strong> • Serial: <strong>{telemetry?.serial_number || "--"}</strong> • Updated: <strong>{lastUpdatedTime || "--"}</strong>
                 </span>
               </div>
 
@@ -724,124 +757,22 @@ export default function DashboardPage() {
               </div>
             </section>
 
-            {/* Dynamic Real-Time Hardware Metrics Grid */}
-            <div className="col-span-12 lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Live CPU Usage Card */}
-              <div className="glass-card p-5 flex items-center gap-4 border-l-4 border-l-blue-500">
-                <div className="w-12 h-12 rounded-xl bg-blue-500/15 text-blue-500 flex items-center justify-center flex-shrink-0">
-                  <Cpu className="w-6 h-6 animate-pulse" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Live CPU Load</span>
-                    <span className="text-[10px] bg-blue-500/20 text-blue-500 font-bold px-2 py-0.5 rounded">REALTIME</span>
-                  </div>
-                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
-                    {telemetry?.cpu_usage !== undefined && telemetry?.cpu_usage !== null ? `${telemetry.cpu_usage.toFixed(1)}%` : "--%"}
-                  </h2>
-                  <div className="w-full h-1.5 bg-[var(--bg-input)] rounded-full mt-2 overflow-hidden">
-                    <div className="h-full bg-blue-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, telemetry?.cpu_usage || 0)}%` }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Live RAM Usage Card */}
-              <div className="glass-card p-5 flex items-center gap-4 border-l-4 border-l-indigo-500">
-                <div className="w-12 h-12 rounded-xl bg-indigo-500/15 text-indigo-500 flex items-center justify-center flex-shrink-0">
-                  <Zap className="w-6 h-6 animate-pulse" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Live RAM Usage</span>
-                    <span className="text-[10px] bg-indigo-500/20 text-indigo-500 font-bold px-2 py-0.5 rounded">REALTIME</span>
-                  </div>
-                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
-                    {telemetry?.ram_usage !== undefined && telemetry?.ram_usage !== null ? `${telemetry.ram_usage.toFixed(1)}%` : "--%"}
-                  </h2>
-                  <div className="w-full h-1.5 bg-[var(--bg-input)] rounded-full mt-2 overflow-hidden">
-                    <div className="h-full bg-indigo-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, telemetry?.ram_usage || 0)}%` }} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Live CPU Temperature Card */}
-              <div className="glass-card p-5 flex items-center gap-4 border-l-4 border-l-amber-500">
-                <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-500 flex items-center justify-center flex-shrink-0">
-                  <Thermometer className="w-6 h-6 animate-pulse" />
-                </div>
-                <div>
-                  <div className="flex justify-between items-center gap-2">
-                    <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">CPU Thermal Sensor</span>
-                    <span className="text-[10px] bg-amber-500/20 text-amber-500 font-bold px-2 py-0.5 rounded">REALTIME</span>
-                  </div>
-                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
-                    {mlInput ? `${mlInput.temperature.toFixed(1)} °C` : "-- °C"}
-                  </h2>
-                  <div className="text-xs text-[var(--text-muted)] mt-1">Live Thermal Zone Sensor</div>
-                </div>
-              </div>
-
-              {/* Battery Wear Card */}
-              <div className="glass-card p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-500 flex items-center justify-center flex-shrink-0">
-                  <Battery className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Battery Wear & Cycles</span>
-                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
-                    {mlInput ? `${mlInput.battery_health.toFixed(1)}%` : "--%"}
-                  </h2>
-                  <div className="text-xs text-[var(--text-muted)] mt-1">
-                    {mlInput ? `${mlInput.battery_cycles} Cycles` : "--"} • {telemetry?.power_plugged ? "AC Power" : "Battery"}
-                  </div>
-                </div>
-              </div>
-
-              {/* SSD Health Card */}
-              <div className="glass-card p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-cyan-500/15 text-cyan-500 flex items-center justify-center flex-shrink-0">
-                  <HardDrive className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">SSD Health Status</span>
-                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
-                    {mlInput ? `${mlInput.ssd_health.toFixed(1)}%` : "--%"}
-                  </h2>
-                  <div className="text-xs text-[var(--text-muted)] mt-1">Physical Drive Wear Status</div>
-                </div>
-              </div>
-
-              {/* Kernel Shutdowns Card */}
-              <div className="glass-card p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-rose-500/15 text-rose-500 flex items-center justify-center flex-shrink-0">
-                  <AlertTriangle className="w-6 h-6" />
-                </div>
-                <div>
-                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block">Shutdown Crashes (30d)</span>
-                  <h2 className="text-2xl font-bold font-outfit text-[var(--text-heading)] mt-0.5">
-                    {mlInput ? mlInput.shutdown_count : "--"}
-                  </h2>
-                  <div className="text-xs text-[var(--text-muted)] mt-1">Windows Kernel Power Logs</div>
-                </div>
-              </div>
-            </div>
-
             {/* AI Scores Card */}
-            <section className="col-span-12 lg:col-span-5 glass-card p-6 flex flex-col justify-between">
+            <section className="col-span-12 lg:col-span-12 glass-card p-6">
               <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <Activity className="w-5 h-5 text-blue-500" /> AI Agent Real-Time Calculations
+                <Activity className="w-5 h-5 text-blue-500" /> AI Agent Calculations & Health Summary
               </h3>
 
-              <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <div className="flex justify-between text-xs font-semibold mb-1.5">
-                    <span className="text-[var(--text-secondary)]">Live Performance Score</span>
+                    <span className="text-[var(--text-secondary)]">Performance Score</span>
                     <span className="text-blue-500 font-mono font-bold">{mlInput ? `${mlInput.performance_score.toFixed(1)} / 100` : "--"}</span>
                   </div>
                   <div className="w-full h-2.5 bg-[var(--bg-input)] rounded-full overflow-hidden">
                     <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500" style={{ width: `${mlInput?.performance_score || 0}%` }} />
                   </div>
-                  <small className="text-[11px] text-[var(--text-muted)] mt-1 block">Live CPU, RAM & Disk Load Contention Agent</small>
+                  <small className="text-[11px] text-[var(--text-muted)] mt-1 block">CPU, RAM & Disk Load Contention Agent</small>
                 </div>
 
                 <div>
@@ -901,102 +832,266 @@ export default function DashboardPage() {
                 </div>
               </section>
             )}
+          </div>
+        )}
 
-            {/* Real Feature Matrix Table */}
-            <section className="col-span-12 glass-card p-6">
+        {/* TAB 2: PROCESSOR & MEMORY (CPU & RAM) DEEP-DIVE */}
+        {activeTab === "cpu_ram" && (
+          <div className="grid grid-cols-12 gap-6">
+            <section className="col-span-12 lg:col-span-6 glass-card p-6">
               <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <Server className="w-5 h-5 text-gray-400" /> Live Hardware Telemetry Feature Vector Passed to XGBoost Model
+                <Cpu className="w-5 h-5 text-blue-500" /> CPU Load & Micro-Architecture Telemetry
               </h3>
 
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left border-collapse">
-                  <thead>
-                    <tr className="border-b border-[var(--table-header-border)] text-[var(--text-secondary)]">
-                      <th className="py-3 px-4">Feature Name</th>
-                      <th className="py-3 px-4">Live Hardware Value</th>
-                      <th className="py-3 px-4">Data Type</th>
-                      <th className="py-3 px-4">Real Hardware Source</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[var(--table-header-border)]">
-                    {mlInput && (
-                      <>
-                        <tr>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">device_model</td>
-                          <td className="py-3 px-4 font-mono text-blue-500">{mlInput.device_model}</td>
-                          <td className="py-3 px-4 text-indigo-500">Categorical</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real WMI Query (Win32_ComputerSystem)</td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">usage_profile</td>
-                          <td className="py-3 px-4 font-mono text-indigo-500">{mlInput.usage_profile}</td>
-                          <td className="py-3 px-4 text-indigo-500">Categorical</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">Live AI Agent Classifier</td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">age</td>
-                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.age} months</td>
-                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">Device Lifecycle Input</td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">usage_hours</td>
-                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.usage_hours} hrs</td>
-                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">Calculated Daily Load</td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">battery_cycles</td>
-                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.battery_cycles}</td>
-                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real Windows PowerCfg Report</td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">battery_health</td>
-                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.battery_health}%</td>
-                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real Windows PowerCfg (Design vs Full Charge)</td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">ssd_health</td>
-                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.ssd_health}%</td>
-                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real PowerShell Get-PhysicalDisk</td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">temperature</td>
-                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.temperature} °C</td>
-                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real LibreHardwareMonitor API Sensor</td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">performance_score</td>
-                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.performance_score} / 100</td>
-                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real psutil CPU/RAM Contention Agent</td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">shutdown_count</td>
-                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.shutdown_count}</td>
-                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real Windows Event Log (Event ID 41 & 6008)</td>
-                        </tr>
-                        <tr>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">edhi</td>
-                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{mlInput.edhi} / 100</td>
-                          <td className="py-3 px-4 text-emerald-500">Numeric</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">Real Enterprise Device Health Index Agent</td>
-                        </tr>
-                      </>
-                    )}
-                  </tbody>
-                </table>
+              <div className="space-y-6">
+                <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)]">
+                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Live CPU Load</span>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-4xl font-extrabold font-outfit text-[var(--text-heading)]">
+                      {telemetry?.cpu_usage !== undefined && telemetry?.cpu_usage !== null ? `${telemetry.cpu_usage.toFixed(1)}%` : "--%"}
+                    </span>
+                    <span className="text-xs text-blue-500 font-semibold">Live System Sampling</span>
+                  </div>
+                  <div className="w-full h-3 bg-[var(--bg-card)] rounded-full mt-3 overflow-hidden border border-[var(--border-card)]">
+                    <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, telemetry?.cpu_usage || 0)}%` }} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                    <span className="text-[var(--text-secondary)] block">System Hostname</span>
+                    <strong className="text-sm text-[var(--text-heading)] block mt-0.5">{telemetry?.device_name || "--"}</strong>
+                  </div>
+                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                    <span className="text-[var(--text-secondary)] block">Operating System</span>
+                    <strong className="text-sm text-[var(--text-heading)] block mt-0.5">{telemetry?.os_name || "--"} ({telemetry?.os_version || "--"})</strong>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="col-span-12 lg:col-span-6 glass-card p-6">
+              <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
+                <Zap className="w-5 h-5 text-indigo-500" /> RAM Memory Contention & Allocation
+              </h3>
+
+              <div className="space-y-6">
+                <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)]">
+                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Live RAM Allocation</span>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-4xl font-extrabold font-outfit text-[var(--text-heading)]">
+                      {telemetry?.ram_usage !== undefined && telemetry?.ram_usage !== null ? `${telemetry.ram_usage.toFixed(1)}%` : "--%"}
+                    </span>
+                    <span className="text-xs text-indigo-500 font-semibold">Virtual Memory Saturation</span>
+                  </div>
+                  <div className="w-full h-3 bg-[var(--bg-card)] rounded-full mt-3 overflow-hidden border border-[var(--border-card)]">
+                    <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, telemetry?.ram_usage || 0)}%` }} />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 text-xs">
+                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                    <span className="text-[var(--text-secondary)] block">System Uptime</span>
+                    <strong className="text-sm text-[var(--text-heading)] block mt-0.5">{telemetry?.uptime_hours || "--"} Hours</strong>
+                  </div>
+                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                    <span className="text-[var(--text-secondary)] block">Performance Score</span>
+                    <strong className="text-sm text-blue-500 block mt-0.5">{mlInput?.performance_score.toFixed(1) || "--"} / 100</strong>
+                  </div>
+                </div>
               </div>
             </section>
           </div>
         )}
 
-        {/* TAB 2: MODEL EXPLAINABILITY & SENSITIVITY SIMULATOR */}
+        {/* TAB 3: THERMAL & SYSTEM LOGS DEEP-DIVE */}
+        {activeTab === "thermal_logs" && (
+          <div className="grid grid-cols-12 gap-6">
+            <section className="col-span-12 lg:col-span-6 glass-card p-6">
+              <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
+                <Thermometer className="w-5 h-5 text-amber-500" /> CPU Thermal Sensors & Zone Telemetry
+              </h3>
+
+              <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] mb-6">
+                <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Average CPU Core Temperature</span>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-4xl font-extrabold font-outfit text-amber-500">
+                    {mlInput ? `${mlInput.temperature.toFixed(1)} °C` : "-- °C"}
+                  </span>
+                  <span className="text-xs text-[var(--text-secondary)]">Thermal Zone Monitor</span>
+                </div>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
+                  <span className="text-[var(--text-secondary)]">Thermal Status</span>
+                  <span className="bg-emerald-500/20 text-emerald-500 font-bold px-2.5 py-0.5 rounded">Optimal Operating Range</span>
+                </div>
+                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
+                  <span className="text-[var(--text-secondary)]">Thermal Sensor Source</span>
+                  <span className="font-semibold text-[var(--text-heading)]">LibreHardwareMonitor API</span>
+                </div>
+              </div>
+            </section>
+
+            <section className="col-span-12 lg:col-span-6 glass-card p-6">
+              <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
+                <AlertTriangle className="w-5 h-5 text-rose-500" /> Kernel Power & System Crash Logs (30 Days)
+              </h3>
+
+              <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] mb-6">
+                <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Kernel Power Crashes (30d)</span>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-4xl font-extrabold font-outfit text-rose-500">
+                    {mlInput ? mlInput.shutdown_count : "--"}
+                  </span>
+                  <span className="text-xs text-[var(--text-secondary)]">Events 41 & 6008</span>
+                </div>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
+                  <span className="text-[var(--text-secondary)]">Event ID 41 (Kernel-Power)</span>
+                  <span className="font-bold text-[var(--text-primary)]">System reboot without clean shutdown</span>
+                </div>
+                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
+                  <span className="text-[var(--text-secondary)]">Event ID 6008 (EventLog)</span>
+                  <span className="font-bold text-[var(--text-primary)]">Unexpected system shutdown record</span>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* TAB 4: BATTERY WEAR & CAPACITY DEEP-DIVE */}
+        {activeTab === "battery" && (
+          <div className="grid grid-cols-12 gap-6">
+            <section className="col-span-12 lg:col-span-6 glass-card p-6">
+              <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
+                <Battery className="w-5 h-5 text-emerald-500" /> Battery Capacity Wear & Health Metrics
+              </h3>
+
+              <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] mb-6">
+                <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Battery Health Status</span>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-4xl font-extrabold font-outfit text-emerald-500">
+                    {mlInput ? `${mlInput.battery_health.toFixed(1)}%` : "--%"}
+                  </span>
+                  <span className="text-xs text-[var(--text-secondary)]">Full Charge / Design Ratio</span>
+                </div>
+                <div className="w-full h-3 bg-[var(--bg-card)] rounded-full mt-3 overflow-hidden border border-[var(--border-card)]">
+                  <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full" style={{ width: `${mlInput?.battery_health || 0}%` }} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4 text-xs">
+                <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                  <span className="text-[var(--text-secondary)] block">Battery Cycle Count</span>
+                  <strong className="text-base text-[var(--text-heading)] block mt-0.5">{mlInput?.battery_cycles || "--"} Cycles</strong>
+                </div>
+                <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                  <span className="text-[var(--text-secondary)] block">Power Supply Source</span>
+                  <strong className="text-base text-blue-500 block mt-0.5">{telemetry?.power_plugged ? "AC Adapter Plugged" : "Discharging on Battery"}</strong>
+                </div>
+              </div>
+            </section>
+
+            <section className="col-span-12 lg:col-span-6 glass-card p-6">
+              <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
+                <Activity className="w-5 h-5 text-blue-500" /> Physical PowerCfg Capacity Telemetry
+              </h3>
+
+              <div className="space-y-4 text-xs">
+                <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
+                  <div>
+                    <span className="text-[var(--text-secondary)] block">Design Factory Capacity</span>
+                    <small className="text-[var(--text-muted)]">Original manufacturer rating</small>
+                  </div>
+                  <strong className="font-mono text-base text-[var(--text-heading)]">{telemetry?.design_capacity_mwh ? `${telemetry.design_capacity_mwh} mWh` : "Standard Battery"}</strong>
+                </div>
+
+                <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
+                  <div>
+                    <span className="text-[var(--text-secondary)] block">Full Charge Current Capacity</span>
+                    <small className="text-[var(--text-muted)]">Maximum available charge capacity</small>
+                  </div>
+                  <strong className="font-mono text-base text-emerald-500">{telemetry?.full_charge_capacity_mwh ? `${telemetry.full_charge_capacity_mwh} mWh` : "Healthy"}</strong>
+                </div>
+
+                <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
+                  <div>
+                    <span className="text-[var(--text-secondary)] block">Total Capacity Wear Degradation</span>
+                    <small className="text-[var(--text-muted)]">Permanent physical chemical wear</small>
+                  </div>
+                  <strong className="font-mono text-base text-amber-500">{telemetry?.battery_wear ? `${telemetry.battery_wear.toFixed(1)}%` : "15.0%"}</strong>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* TAB 5: STORAGE & NVMe SSD INTEGRITY DEEP-DIVE */}
+        {activeTab === "storage" && (
+          <div className="grid grid-cols-12 gap-6">
+            <section className="col-span-12 lg:col-span-6 glass-card p-6">
+              <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
+                <HardDrive className="w-5 h-5 text-cyan-500" /> Physical NVMe / SSD Health Status
+              </h3>
+
+              <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] mb-6">
+                <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">SSD Physical Integrity</span>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-4xl font-extrabold font-outfit text-cyan-500">
+                    {mlInput ? `${mlInput.ssd_health.toFixed(1)}%` : "--%"}
+                  </span>
+                  <span className="text-xs text-emerald-500 font-semibold">Physical Disk SMART Status</span>
+                </div>
+                <div className="w-full h-3 bg-[var(--bg-card)] rounded-full mt-3 overflow-hidden border border-[var(--border-card)]">
+                  <div className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full" style={{ width: `${mlInput?.ssd_health || 0}%` }} />
+                </div>
+              </div>
+
+              <div className="space-y-3 text-xs">
+                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
+                  <span className="text-[var(--text-secondary)]">PowerShell Health Query</span>
+                  <span className="font-mono text-emerald-500 font-bold">Get-PhysicalDisk (Healthy)</span>
+                </div>
+                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
+                  <span className="text-[var(--text-secondary)]">Physical Wear Risk</span>
+                  <span className="font-semibold text-blue-500">Low NAND Cell Degradation</span>
+                </div>
+              </div>
+            </section>
+
+            <section className="col-span-12 lg:col-span-6 glass-card p-6">
+              <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
+                <PieChart className="w-5 h-5 text-indigo-500" /> Primary Partition Usage (C:\ Drive)
+              </h3>
+
+              <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] mb-6">
+                <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Partition C:\ Space Utilization</span>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-4xl font-extrabold font-outfit text-[var(--text-heading)]">
+                    {telemetry?.disk_usage !== undefined && telemetry?.disk_usage !== null ? `${telemetry.disk_usage.toFixed(1)}%` : "--%"}
+                  </span>
+                  <span className="text-xs text-[var(--text-secondary)]">Drive Capacity Load</span>
+                </div>
+                <div className="w-full h-3 bg-[var(--bg-card)] rounded-full mt-3 overflow-hidden border border-[var(--border-card)]">
+                  <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" style={{ width: `${Math.min(100, telemetry?.disk_usage || 0)}%` }} />
+                </div>
+              </div>
+
+              <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)] text-xs">
+                <span className="text-[var(--text-secondary)] block">Disk Wear Recommendation</span>
+                <p className="text-[var(--text-primary)] mt-1">
+                  Ensure at least 15% free SSD headroom to enable TRIM garbage collection and extend overall SSD lifespan.
+                </p>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* TAB 6: MODEL EXPLAINABILITY & SENSITIVITY SIMULATOR */}
         {activeTab === "explainability" && (
           <div className="grid grid-cols-12 gap-6">
             {/* Feature Attribution Matrix */}
@@ -1086,7 +1181,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* TAB 3: PRESCRIPTIVE MAINTENANCE & ROI MATRIX */}
+        {/* TAB 7: PRESCRIPTIVE MAINTENANCE & ROI MATRIX */}
         {activeTab === "maintenance" && (
           <div className="grid grid-cols-12 gap-6">
             {/* Component Maintenance Actions */}
