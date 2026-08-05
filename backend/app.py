@@ -1,5 +1,6 @@
 import os
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request
+from flask_cors import CORS
 
 from backend.config import BASE_DIR
 from backend.core.collector import HardwareCollector
@@ -8,24 +9,14 @@ from backend.core.model_service import LifecyclePredictor
 from backend.core.component_manager import ComponentMaintenanceManager
 from backend.models.telemetry_schema import MLInputSchema
 
-app = Flask(__name__, static_folder=os.path.join(BASE_DIR, "static"))
+app = Flask(__name__)
+CORS(app)  # Enable Cross-Origin Resource Sharing for Next.js frontend
 
 # Singleton OOP Services
 collector = HardwareCollector()
 agent = DeviceHealthAgent()
 predictor = LifecyclePredictor()
 maintenance_mgr = ComponentMaintenanceManager()
-
-
-@app.route("/")
-def index():
-    """Serves the primary Enterprise Dashboard frontend."""
-    return send_from_directory(app.static_folder, "index.html")
-
-
-@app.route("/static/<path:path>")
-def serve_static(path):
-    return send_from_directory(app.static_folder, path)
 
 
 @app.route("/api/health", methods=["GET"])
@@ -49,7 +40,6 @@ def get_telemetry():
 @app.route("/api/predict", methods=["POST", "GET"])
 def predict_rul():
     try:
-        # Check optional query params or JSON payload for age/usage overrides
         params = request.get_json(silent=True) or {}
         manual_age = float(params.get("age", request.args.get("age", 24.0)))
         daily_usage = float(params.get("daily_usage", request.args.get("daily_usage", 6.5)))
@@ -89,7 +79,6 @@ def simulate_maintenance():
         current_ml = payload.get("ml_input")
 
         if not current_ml:
-            # Generate current ML input
             telemetry = collector.collect_all()
             ml_input = agent.process_telemetry(telemetry)
         else:
