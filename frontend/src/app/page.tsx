@@ -12,6 +12,7 @@ import {
   Activity,
   ShieldCheck,
   Eye,
+  EyeOff,
   Clock,
   Sparkles,
   Laptop,
@@ -19,7 +20,7 @@ import {
   Users,
   ChevronDown,
   Mail,
-  Key,
+  Lock,
   LogOut
 } from "lucide-react";
 import { authenticateUser, UserAccount } from "./auth";
@@ -102,6 +103,7 @@ export default function DashboardPage() {
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   const [loginEmail, setLoginEmail] = useState<string>("");
   const [loginPassword, setLoginPassword] = useState<string>("");
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Dashboard Data State
@@ -255,7 +257,7 @@ export default function DashboardPage() {
                 Administrator Email
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                <Mail className="w-4 h-4 text-blue-400 absolute left-3.5 top-3.5" />
                 <input
                   type="email"
                   required
@@ -272,15 +274,27 @@ export default function DashboardPage() {
                 Password
               </label>
               <div className="relative">
-                <Key className="w-4 h-4 text-gray-400 absolute left-3.5 top-3.5" />
+                <Lock className="w-4 h-4 text-indigo-400 absolute left-3.5 top-3.5" />
                 <input
-                  type="password"
+                  type={showPassword ? "text" : "password"}
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder="••••••••"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-3 text-gray-400 hover:text-white transition-colors"
+                  title={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4 text-gray-400" />
+                  ) : (
+                    <Eye className="w-4 h-4 text-gray-400" />
+                  )}
+                </button>
               </div>
             </div>
 
