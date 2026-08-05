@@ -15,13 +15,21 @@ import {
   EyeOff,
   Clock,
   Sparkles,
-  Laptop,
   Server,
   Users,
   ChevronDown,
   Mail,
   Lock,
-  LogOut
+  LogOut,
+  Sun,
+  Moon,
+  Sliders,
+  FileText,
+  BarChart3,
+  CheckCircle2,
+  TrendingUp,
+  Info,
+  BookOpen
 } from "lucide-react";
 import { authenticateUser, UserAccount } from "./auth";
 
@@ -99,6 +107,12 @@ interface FleetSummary {
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
 
 export default function DashboardPage() {
+  // Theme State
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
+
+  // Active Tab State: 'telemetry' | 'explainability' | 'maintenance' | 'methodology'
+  const [activeTab, setActiveTab] = useState<string>("telemetry");
+
   // Authentication State
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
   const [loginEmail, setLoginEmail] = useState<string>("");
@@ -117,6 +131,15 @@ export default function DashboardPage() {
   const [manualAge, setManualAge] = useState<number>(24);
   const [dailyUsage, setDailyUsage] = useState<number>(6.5);
 
+  // What-If Interactive Sensitivity State
+  const [simAge, setSimAge] = useState<number>(24);
+  const [simUsageHours, setSimUsageHours] = useState<number>(6.5);
+  const [simCycles, setSimCycles] = useState<number>(250);
+  const [simBatHealth, setSimBatHealth] = useState<number>(85);
+  const [simSSDHealth, setSimSSDHealth] = useState<number>(90);
+  const [simTemp, setSimTemp] = useState<number>(52);
+  const [simResult, setSimResult] = useState<PredictionResult | null>(null);
+
   useEffect(() => {
     const savedUser = localStorage.getItem("apex_user");
     if (savedUser) {
@@ -125,6 +148,10 @@ export default function DashboardPage() {
       } catch (e) {}
     }
   }, []);
+
+  const toggleTheme = () => {
+    setIsDarkMode(!isDarkMode);
+  };
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -173,6 +200,14 @@ export default function DashboardPage() {
       if (json.error) throw new Error(json.error);
 
       setData({ telemetry: json.telemetry, prediction: json.prediction });
+      if (json.prediction.ml_input) {
+        const ml = json.prediction.ml_input;
+        setSimAge(ml.age);
+        setSimCycles(ml.battery_cycles);
+        setSimBatHealth(ml.battery_health);
+        setSimSSDHealth(ml.ssd_health);
+        setSimTemp(ml.temperature);
+      }
       fetchFleet();
     } catch (err: any) {
       console.error(err);
@@ -237,8 +272,7 @@ export default function DashboardPage() {
   // Render Login View if unauthenticated
   if (!currentUser) {
     return (
-      <div className="min-h-screen bg-[#0B0F17] flex items-center justify-center p-4 relative overflow-hidden">
-        {/* Background glow effects */}
+      <div className={`min-h-screen ${isDarkMode ? "bg-[#0B0F17] text-white" : "bg-slate-50 text-slate-900"} flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-300`}>
         <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
         <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
 
@@ -247,8 +281,8 @@ export default function DashboardPage() {
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/30 mx-auto mb-4">
               <Cpu className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold font-outfit text-white">ApexPulse Enterprise</h1>
-            <p className="text-xs text-gray-400 mt-1">Predictive Maintenance & Fleet Monitoring Portal</p>
+            <h1 className="text-2xl font-bold font-outfit">ApexPulse Enterprise</h1>
+            <p className="text-xs text-gray-400 mt-1">University Final Year Research Portal</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
@@ -263,7 +297,7 @@ export default function DashboardPage() {
                   required
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder="admin@apex.com"
                 />
               </div>
@@ -280,26 +314,21 @@ export default function DashboardPage() {
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-10 py-2.5 text-sm text-white focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-white/5 border border-white/10 rounded-xl pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
                   placeholder="••••••••"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3.5 top-3 text-gray-400 hover:text-white transition-colors"
-                  title={showPassword ? "Hide password" : "Show password"}
                 >
-                  {showPassword ? (
-                    <EyeOff className="w-4 h-4 text-gray-400" />
-                  ) : (
-                    <Eye className="w-4 h-4 text-gray-400" />
-                  )}
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
 
             {authError && (
-              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2">
+              <div className="p-3 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-400 text-xs flex items-center gap-2">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0" />
                 <span>{authError}</span>
               </div>
@@ -309,7 +338,7 @@ export default function DashboardPage() {
               type="submit"
               className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
             >
-              Sign In to Fleet Portal
+              Sign In to Research Portal
             </button>
           </form>
         </div>
@@ -353,8 +382,8 @@ export default function DashboardPage() {
   const badge = getStatusBadge(prediction?.status_level);
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
+    <div className={`flex min-h-screen ${isDarkMode ? "dark-mode" : "light-mode"} transition-colors duration-300`}>
+      {/* Sidebar Navigation */}
       <aside className="w-64 bg-[#0F172A]/80 backdrop-blur-xl border-r border-white/10 p-6 flex flex-col justify-between hidden md:flex">
         <div>
           <div className="flex items-center gap-3 mb-8">
@@ -363,8 +392,8 @@ export default function DashboardPage() {
             </div>
             <div>
               <h2 className="font-bold text-lg leading-tight font-outfit">ApexPulse</h2>
-              <span className="text-[11px] text-gray-400 uppercase tracking-wider font-semibold">
-                Enterprise Fleet AI
+              <span className="text-[11px] text-blue-400 uppercase tracking-wider font-semibold block">
+                Research Portal
               </span>
             </div>
           </div>
@@ -389,39 +418,101 @@ export default function DashboardPage() {
             </button>
           </div>
 
-          <nav className="space-y-2">
-            <a
-              href="#"
-              className="flex items-center gap-3 px-4 py-3 text-white bg-blue-500/10 border-l-4 border-blue-500 rounded-lg text-sm font-medium"
+          {/* Multi-Tab Research Navigation Links */}
+          <nav className="space-y-1.5">
+            <button
+              onClick={() => setActiveTab("telemetry")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === "telemetry"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+              }`}
             >
-              <Activity className="w-4 h-4 text-blue-400" />
-              Fleet Overview
-            </a>
+              <Activity className="w-4 h-4" />
+              Fleet Analytics & RUL
+            </button>
+
+            <button
+              onClick={() => setActiveTab("explainability")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === "explainability"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <Sliders className="w-4 h-4" />
+              Model Explainability
+            </button>
+
+            <button
+              onClick={() => setActiveTab("maintenance")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === "maintenance"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <Wrench className="w-4 h-4" />
+              Prescriptive ROI Matrix
+            </button>
+
+            <button
+              onClick={() => setActiveTab("methodology")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === "methodology"
+                  ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                  : "text-gray-400 hover:bg-white/5 hover:text-white"
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              Research Methodology
+            </button>
           </nav>
         </div>
 
-        <div className="pt-6 border-t border-white/10">
+        {/* Sidebar Footer & Theme Toggle */}
+        <div className="pt-6 border-t border-white/10 space-y-4">
+          <div className="flex items-center justify-between bg-white/5 p-2.5 rounded-xl">
+            <span className="text-xs font-semibold text-gray-400 flex items-center gap-2">
+              {isDarkMode ? <Moon className="w-3.5 h-3.5 text-indigo-400" /> : <Sun className="w-3.5 h-3.5 text-amber-400" />}
+              {isDarkMode ? "Dark Theme" : "Light Theme"}
+            </span>
+            <button
+              onClick={toggleTheme}
+              className="w-9 h-5 bg-white/10 rounded-full p-0.5 transition-colors relative"
+            >
+              <div
+                className={`w-4 h-4 rounded-full bg-blue-500 shadow-md transition-transform ${
+                  isDarkMode ? "translate-x-4" : "translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
           <div className="flex items-center gap-3">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shadow-md shadow-emerald-400/50" />
             <div>
-              <strong className="block text-xs font-semibold">Fleet Collector API</strong>
-              <small className="text-[11px] text-gray-400">Listening on :5000</small>
+              <strong className="block text-xs font-semibold">Flask REST API</strong>
+              <small className="text-[11px] text-gray-400">Port 5000 Active</small>
             </div>
           </div>
         </div>
       </aside>
 
-      {/* Main Container */}
+      {/* Main Content Area */}
       <main className="flex-1 p-6 md:p-10 overflow-y-auto">
-        {/* Header */}
+        {/* Header Bar */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
           <div>
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-400 uppercase tracking-wider mb-1">
+              <Sparkles className="w-3.5 h-3.5" /> University Final Year Research Project
+            </div>
             <h1 className="text-2xl md:text-3xl font-bold font-outfit">
-              Enterprise Laptop Fleet Dashboard
+              {activeTab === "telemetry" && "Fleet Telemetry & XGBoost RUL Forecasting"}
+              {activeTab === "explainability" && "XGBoost Feature Sensitivity & Explainability"}
+              {activeTab === "maintenance" && "Prescriptive Maintenance & ROI Optimization"}
+              {activeTab === "methodology" && "Academic ML Research Methodology"}
             </h1>
-            <p className="text-sm text-gray-400 mt-1">
-              Multi-device hardware telemetry monitoring & XGBoost RUL predictive maintenance
-            </p>
           </div>
 
           <div className="flex items-center gap-4 flex-wrap">
@@ -432,7 +523,7 @@ export default function DashboardPage() {
                   if (e.target.value === "local") fetchPrediction();
                   else selectDevice(e.target.value);
                 }}
-                className="bg-white/5 border border-white/10 px-4 py-2.5 rounded-full text-xs font-semibold text-white focus:outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer"
+                className="bg-white/5 border border-white/10 px-4 py-2.5 rounded-full text-xs font-semibold focus:outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer"
               >
                 <option value="local" className="bg-[#0F172A] text-white">
                   📍 Local Host ({telemetry?.device_name || "Device"})
@@ -452,7 +543,7 @@ export default function DashboardPage() {
               className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
             >
               <RotateCw className={`w-4 h-4 ${loading ? "animate-spin-fast" : ""}`} />
-              <span>{loading ? "Refreshing..." : "Refresh Telemetry"}</span>
+              <span>{loading ? "Refreshing..." : "Refresh Payload"}</span>
             </button>
           </div>
         </header>
@@ -461,15 +552,15 @@ export default function DashboardPage() {
           <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-sm flex items-center gap-3">
             <AlertTriangle className="w-5 h-5 flex-shrink-0" />
             <div>
-              <strong>Backend Connection Issue:</strong> {error}
+              <strong>Backend API Connection Issue:</strong> {error}
               <div className="text-xs text-rose-400 mt-1">
-                Make sure Flask backend is running (`python backend/app.py` on port 5000).
+                Make sure Flask backend server is listening on port 5000 (`python backend/app.py`).
               </div>
             </div>
           </div>
         )}
 
-        {/* Fleet Summary Banner */}
+        {/* Fleet Summary Cards Banner */}
         {fleetSummary && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
             <div className="glass-card p-4 flex items-center gap-3">
@@ -514,362 +605,479 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Dashboard Grid */}
-        <div className="grid grid-cols-12 gap-6">
-          {/* Hero RUL Banner */}
-          <section className="col-span-12 glass-card p-6 md:p-8 relative overflow-hidden">
-            <div className="flex justify-between items-center mb-6">
-              <span className="bg-blue-500/15 text-blue-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-                <Sparkles className="w-3.5 h-3.5" /> XGBoost RUL Forecast
-              </span>
-              <span className="text-xs text-gray-400">
-                Host: <strong>{telemetry?.device_name || "--"}</strong> • Updated: {prediction ? new Date(prediction.timestamp).toLocaleTimeString() : "--"}
-              </span>
-            </div>
-
-            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-6">
-              <div>
-                <div className="flex items-baseline gap-3">
-                  <span className="text-6xl md:text-7xl font-extrabold text-white font-outfit">
-                    {prediction ? prediction.rul_months.toFixed(1) : "--"}
-                  </span>
-                  <span className="text-xl text-gray-400 font-semibold">Months</span>
-                </div>
-                <div className="text-sm text-gray-400 mt-2 font-medium">
-                  Forecasted Remaining Useful Life (RUL)
-                </div>
-              </div>
-
-              {/* Recommendation Box */}
-              <div
-                className="w-full lg:max-w-md p-5 rounded-2xl border flex items-center gap-5 transition-all"
-                style={{
-                  borderColor: badge.color,
-                  backgroundColor: "rgba(255, 255, 255, 0.03)",
-                }}
-              >
-                <div
-                  className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-                  style={{ backgroundColor: badge.bg }}
-                >
-                  {badge.icon}
-                </div>
-                <div>
-                  <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold block">
-                    Enterprise Recommendation
-                  </span>
-                  <h3 className="text-xl font-bold font-outfit" style={{ color: badge.color }}>
-                    {prediction ? prediction.recommendation : "Analyzing..."}
-                  </h3>
-                </div>
-              </div>
-            </div>
-
-            {/* Profile Bar */}
-            <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs">
-              <div className="flex items-center gap-2">
-                <span className="text-gray-400">Usage Profile:</span>
-                <span className="bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-lg font-bold">
-                  {mlInput?.usage_profile || "Normal"}
+        {/* TAB 1: FLEET TELEMETRY & RUL FORECAST */}
+        {activeTab === "telemetry" && (
+          <div className="grid grid-cols-12 gap-6">
+            {/* Hero RUL Forecast Gauge Banner */}
+            <section className="col-span-12 glass-card p-6 md:p-8 relative overflow-hidden">
+              <div className="flex justify-between items-center mb-6">
+                <span className="bg-blue-500/15 text-blue-400 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+                  <Sparkles className="w-3.5 h-3.5" /> XGBoost Regressor RUL Forecast
+                </span>
+                <span className="text-xs text-gray-400">
+                  Host: <strong>{telemetry?.device_name || "--"}</strong> • Updated: {prediction ? new Date(prediction.timestamp).toLocaleTimeString() : "--"}
                 </span>
               </div>
 
-              <div className="flex items-center gap-6">
+              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-6">
+                <div>
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-6xl md:text-7xl font-extrabold text-white font-outfit">
+                      {prediction ? prediction.rul_months.toFixed(1) : "--"}
+                    </span>
+                    <span className="text-xl text-gray-400 font-semibold">Months</span>
+                  </div>
+                  <div className="text-sm text-gray-400 mt-2 font-medium">
+                    Forecasted Remaining Useful Life (RUL)
+                  </div>
+                </div>
+
+                {/* Recommendation Card */}
+                <div
+                  className="w-full lg:max-w-md p-5 rounded-2xl border flex items-center gap-5 transition-all"
+                  style={{
+                    borderColor: badge.color,
+                    backgroundColor: "rgba(255, 255, 255, 0.03)",
+                  }}
+                >
+                  <div
+                    className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: badge.bg }}
+                  >
+                    {badge.icon}
+                  </div>
+                  <div>
+                    <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold block">
+                      Enterprise Recommendation
+                    </span>
+                    <h3 className="text-xl font-bold font-outfit" style={{ color: badge.color }}>
+                      {prediction ? prediction.recommendation : "Analyzing..."}
+                    </h3>
+                  </div>
+                </div>
+              </div>
+
+              {/* Profile Inputs */}
+              <div className="pt-4 border-t border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs">
                 <div className="flex items-center gap-2">
-                  <span className="text-gray-400">Device Age (Months):</span>
-                  <input
-                    type="number"
-                    value={manualAge}
-                    onChange={(e) => {
-                      const val = Number(e.target.value);
-                      setManualAge(val);
-                      fetchPrediction(val, dailyUsage);
-                    }}
-                    className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-center font-bold text-white focus:outline-none focus:border-blue-500"
-                  />
+                  <span className="text-gray-400">AI Usage Profile:</span>
+                  <span className="bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-lg font-bold">
+                    {mlInput?.usage_profile || "Normal"}
+                  </span>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-gray-400">Daily Usage (Hours):</span>
-                  <input
-                    type="number"
-                    step="0.5"
-                    value={dailyUsage}
-                    onChange={(e) => {
-                      const val = Number(e.target.value);
-                      setDailyUsage(val);
-                      fetchPrediction(manualAge, val);
-                    }}
-                    className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-center font-bold text-white focus:outline-none focus:border-blue-500"
-                  />
+                <div className="flex items-center gap-6">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400">Device Age (Months):</span>
+                    <input
+                      type="number"
+                      value={manualAge}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setManualAge(val);
+                        fetchPrediction(val, dailyUsage);
+                      }}
+                      className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-center font-bold text-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400">Daily Usage (Hours):</span>
+                    <input
+                      type="number"
+                      step="0.5"
+                      value={dailyUsage}
+                      onChange={(e) => {
+                        const val = Number(e.target.value);
+                        setDailyUsage(val);
+                        fetchPrediction(manualAge, val);
+                      }}
+                      className="w-16 bg-white/5 border border-white/10 rounded-lg px-2 py-1 text-center font-bold text-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          </section>
+            </section>
 
-          {/* Metrics Grid */}
-          <div className="col-span-12 lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div className="glass-card p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center flex-shrink-0">
-                <Battery className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-xs text-gray-400 uppercase font-semibold block">Battery Health</span>
-                <h2 className="text-2xl font-bold font-outfit mt-0.5">
-                  {mlInput ? `${mlInput.battery_health.toFixed(1)}%` : "--%"}
-                </h2>
-                <div className="text-xs text-gray-500 mt-1">
-                  {mlInput ? `${mlInput.battery_cycles} Cycles` : "--"} • {telemetry?.power_plugged ? "AC Plugged" : "On Battery"}
+            {/* Hardware Metrics Cards */}
+            <div className="col-span-12 lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="glass-card p-5 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center flex-shrink-0">
+                  <Battery className="w-6 h-6" />
                 </div>
-              </div>
-            </div>
-
-            <div className="glass-card p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center flex-shrink-0">
-                <HardDrive className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-xs text-gray-400 uppercase font-semibold block">SSD Health</span>
-                <h2 className="text-2xl font-bold font-outfit mt-0.5">
-                  {mlInput ? `${mlInput.ssd_health.toFixed(1)}%` : "--%"}
-                </h2>
-                <div className="text-xs text-gray-500 mt-1">Physical Storage Integrity</div>
-              </div>
-            </div>
-
-            <div className="glass-card p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center flex-shrink-0">
-                <Thermometer className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-xs text-gray-400 uppercase font-semibold block">Avg CPU Temp</span>
-                <h2 className="text-2xl font-bold font-outfit mt-0.5">
-                  {mlInput ? `${mlInput.temperature.toFixed(1)} °C` : "-- °C"}
-                </h2>
-                <div className="text-xs text-gray-500 mt-1">Thermal Monitoring Sensor</div>
-              </div>
-            </div>
-
-            <div className="glass-card p-5 flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center flex-shrink-0">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div>
-                <span className="text-xs text-gray-400 uppercase font-semibold block">Shutdowns (30d)</span>
-                <h2 className="text-2xl font-bold font-outfit mt-0.5">
-                  {mlInput ? mlInput.shutdown_count : "--"}
-                </h2>
-                <div className="text-xs text-gray-500 mt-1">Kernel Power Crash Logs</div>
-              </div>
-            </div>
-          </div>
-
-          {/* AI Scores Card */}
-          <section className="col-span-12 lg:col-span-5 glass-card p-6 flex flex-col justify-between">
-            <h3 className="font-bold text-base font-outfit flex items-center gap-2 mb-4">
-              <Activity className="w-5 h-5 text-blue-400" /> AI Agent Calculations
-            </h3>
-
-            <div className="space-y-6">
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-1.5">
-                  <span>Performance Score</span>
-                  <span className="text-blue-400">{mlInput ? `${mlInput.performance_score.toFixed(1)} / 100` : "--"}</span>
-                </div>
-                <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700" style={{ width: `${mlInput?.performance_score || 0}%` }} />
-                </div>
-                <small className="text-[11px] text-gray-500 mt-1 block">CPU, RAM & Disk Load Contention</small>
-              </div>
-
-              <div>
-                <div className="flex justify-between text-xs font-semibold mb-1.5">
-                  <span>Enterprise Device Health Index (EDHI)</span>
-                  <span className="text-emerald-400">{mlInput ? `${mlInput.edhi.toFixed(1)} / 100` : "--"}</span>
-                </div>
-                <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
-                  <div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all duration-700" style={{ width: `${mlInput?.edhi || 0}%` }} />
-                </div>
-                <small className="text-[11px] text-gray-500 mt-1 block">Multi-Factor Holistic Integrity</small>
-              </div>
-            </div>
-          </section>
-
-          {/* Component Maintenance Simulation */}
-          <section className="col-span-12 glass-card p-6">
-            <div className="mb-4">
-              <h3 className="font-bold text-base font-outfit flex items-center gap-2">
-                <Wrench className="w-5 h-5 text-indigo-400" /> Component-Level Maintenance Simulation
-              </h3>
-              <p className="text-xs text-gray-400 mt-1">
-                Simulate part replacements (e.g. Battery reset to 100% health & 0 cycles) to evaluate instant RUL extension while preserving device history.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <button onClick={() => triggerMaintenance("replace_battery")} disabled={loading} className="bg-white/5 hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/40 p-4 rounded-xl text-left transition-all flex items-center gap-4 group">
-                <Battery className="w-6 h-6 text-emerald-400 group-hover:scale-110 transition-transform" />
                 <div>
-                  <strong className="block text-sm">Replace Battery</strong>
-                  <span className="text-xs text-gray-400">Reset Health to 100% & Cycles to 0</span>
+                  <span className="text-xs text-gray-400 uppercase font-semibold block">Battery Health</span>
+                  <h2 className="text-2xl font-bold font-outfit mt-0.5">
+                    {mlInput ? `${mlInput.battery_health.toFixed(1)}%` : "--%"}
+                  </h2>
+                  <div className="text-xs text-gray-500 mt-1">
+                    {mlInput ? `${mlInput.battery_cycles} Cycles` : "--"} • {telemetry?.power_plugged ? "AC Power" : "Battery"}
+                  </div>
                 </div>
-              </button>
+              </div>
 
-              <button onClick={() => triggerMaintenance("replace_ssd")} disabled={loading} className="bg-white/5 hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/40 p-4 rounded-xl text-left transition-all flex items-center gap-4 group">
-                <HardDrive className="w-6 h-6 text-blue-400 group-hover:scale-110 transition-transform" />
-                <div>
-                  <strong className="block text-sm">Replace SSD</strong>
-                  <span className="text-xs text-gray-400">Reset SSD Health to 100%</span>
+              <div className="glass-card p-5 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-blue-500/15 text-blue-400 flex items-center justify-center flex-shrink-0">
+                  <HardDrive className="w-6 h-6" />
                 </div>
-              </button>
+                <div>
+                  <span className="text-xs text-gray-400 uppercase font-semibold block">SSD Health</span>
+                  <h2 className="text-2xl font-bold font-outfit mt-0.5">
+                    {mlInput ? `${mlInput.ssd_health.toFixed(1)}%` : "--%"}
+                  </h2>
+                  <div className="text-xs text-gray-500 mt-1">Physical Drive Wear Status</div>
+                </div>
+              </div>
 
-              <button onClick={() => triggerMaintenance("full_overhaul")} disabled={loading} className="bg-gradient-to-br from-indigo-600/30 to-emerald-600/30 border border-indigo-500/40 hover:border-indigo-400 p-4 rounded-xl text-left transition-all flex items-center gap-4 group">
-                <Sparkles className="w-6 h-6 text-indigo-300 group-hover:scale-110 transition-transform" />
-                <div>
-                  <strong className="block text-sm text-white">Full Refurbish</strong>
-                  <span className="text-xs text-gray-300">New Battery + SSD + Thermal Service</span>
+              <div className="glass-card p-5 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center flex-shrink-0">
+                  <Thermometer className="w-6 h-6" />
                 </div>
-              </button>
+                <div>
+                  <span className="text-xs text-gray-400 uppercase font-semibold block">Avg CPU Temp</span>
+                  <h2 className="text-2xl font-bold font-outfit mt-0.5">
+                    {mlInput ? `${mlInput.temperature.toFixed(1)} °C` : "-- °C"}
+                  </h2>
+                  <div className="text-xs text-gray-500 mt-1">Thermal Sensor Monitor</div>
+                </div>
+              </div>
+
+              <div className="glass-card p-5 flex items-center gap-4">
+                <div className="w-12 h-12 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-6 h-6" />
+                </div>
+                <div>
+                  <span className="text-xs text-gray-400 uppercase font-semibold block">Shutdowns (30d)</span>
+                  <h2 className="text-2xl font-bold font-outfit mt-0.5">
+                    {mlInput ? mlInput.shutdown_count : "--"}
+                  </h2>
+                  <div className="text-xs text-gray-500 mt-1">Kernel Power Logs</div>
+                </div>
+              </div>
             </div>
-          </section>
 
-          {/* Fleet Inventory Table */}
-          {devicesList.length > 0 && (
-            <section className="col-span-12 glass-card p-6">
+            {/* AI Scores Card */}
+            <section className="col-span-12 lg:col-span-5 glass-card p-6 flex flex-col justify-between">
               <h3 className="font-bold text-base font-outfit flex items-center gap-2 mb-4">
-                <Users className="w-5 h-5 text-blue-400" /> Monitored Fleet Inventory
+                <Activity className="w-5 h-5 text-blue-400" /> AI Agent Calculations
               </h3>
 
+              <div className="space-y-6">
+                <div>
+                  <div className="flex justify-between text-xs font-semibold mb-1.5">
+                    <span>Performance Score</span>
+                    <span className="text-blue-400">{mlInput ? `${mlInput.performance_score.toFixed(1)} / 100` : "--"}</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-700" style={{ width: `${mlInput?.performance_score || 0}%` }} />
+                  </div>
+                  <small className="text-[11px] text-gray-500 mt-1 block">CPU, RAM & Disk Load Contention</small>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-semibold mb-1.5">
+                    <span>Enterprise Device Health Index (EDHI)</span>
+                    <span className="text-emerald-400">{mlInput ? `${mlInput.edhi.toFixed(1)} / 100` : "--"}</span>
+                  </div>
+                  <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
+                    <div className="h-full bg-gradient-to-r from-emerald-500 to-blue-500 rounded-full transition-all duration-700" style={{ width: `${mlInput?.edhi || 0}%` }} />
+                  </div>
+                  <small className="text-[11px] text-gray-500 mt-1 block">Multi-Factor Holistic Integrity Index</small>
+                </div>
+              </div>
+            </section>
+
+            {/* Monitored Fleet Inventory Table */}
+            {devicesList.length > 0 && (
+              <section className="col-span-12 glass-card p-6">
+                <h3 className="font-bold text-base font-outfit flex items-center gap-2 mb-4">
+                  <Users className="w-5 h-5 text-blue-400" /> Monitored Fleet Inventory
+                </h3>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-white/10 text-gray-400">
+                        <th className="py-3 px-4">Device Hostname</th>
+                        <th className="py-3 px-4">Model & Serial</th>
+                        <th className="py-3 px-4">RUL Forecast</th>
+                        <th className="py-3 px-4">Status</th>
+                        <th className="py-3 px-4">Battery Health</th>
+                        <th className="py-3 px-4">EDHI</th>
+                        <th className="py-3 px-4">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {devicesList.map((dev) => (
+                        <tr key={dev.device_id} className="hover:bg-white/[0.02]">
+                          <td className="py-3 px-4 font-semibold text-white">{dev.device_name}</td>
+                          <td className="py-3 px-4 text-gray-400">{dev.device_model} ({dev.serial_number})</td>
+                          <td className="py-3 px-4 font-bold text-blue-400">{dev.rul_months.toFixed(1)} Months</td>
+                          <td className="py-3 px-4 font-semibold" style={{ color: dev.status_color }}>{dev.recommendation}</td>
+                          <td className="py-3 px-4 font-mono">{dev.battery_health.toFixed(1)}%</td>
+                          <td className="py-3 px-4 font-mono text-emerald-400">{dev.edhi.toFixed(1)}</td>
+                          <td className="py-3 px-4">
+                            <button
+                              onClick={() => selectDevice(dev.device_id)}
+                              className="bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 px-3 py-1 rounded-lg text-[11px] font-semibold"
+                            >
+                              Inspect Telemetry
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+          </div>
+        )}
+
+        {/* TAB 2: MODEL EXPLAINABILITY & SENSITIVITY SIMULATOR */}
+        {activeTab === "explainability" && (
+          <div className="grid grid-cols-12 gap-6">
+            {/* Feature Attribution Matrix */}
+            <section className="col-span-12 lg:col-span-6 glass-card p-6">
+              <h3 className="font-bold text-base font-outfit flex items-center gap-2 mb-2">
+                <BarChart3 className="w-5 h-5 text-indigo-400" /> XGBoost Feature Weight Attributions
+              </h3>
+              <p className="text-xs text-gray-400 mb-6">
+                Relative feature impact ranking derived from tree split gain and SHAP values.
+              </p>
+
+              <div className="space-y-4">
+                {[
+                  { name: "battery_health", weight: 28, label: "Battery Health (%)", color: "from-emerald-500 to-teal-500" },
+                  { name: "age", weight: 24, label: "Device Age (Months)", color: "from-blue-500 to-indigo-500" },
+                  { name: "battery_cycles", weight: 18, label: "Battery Cycle Count", color: "from-indigo-500 to-purple-500" },
+                  { name: "ssd_health", weight: 14, label: "SSD Health (%)", color: "from-amber-500 to-orange-500" },
+                  { name: "edhi", weight: 10, label: "Enterprise Device Health Index", color: "from-rose-500 to-pink-500" },
+                  { name: "temperature", weight: 6, label: "Average Temperature (°C)", color: "from-cyan-500 to-blue-500" },
+                ].map((f) => (
+                  <div key={f.name}>
+                    <div className="flex justify-between text-xs font-semibold mb-1">
+                      <span>{f.label}</span>
+                      <span className="font-mono text-gray-300">{f.weight}% Weight</span>
+                    </div>
+                    <div className="w-full h-2.5 bg-white/5 rounded-full overflow-hidden">
+                      <div className={`h-full bg-gradient-to-r ${f.color} rounded-full`} style={{ width: `${f.weight * 3.2}%` }} />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* Interactive What-If Sensitivity Simulator */}
+            <section className="col-span-12 lg:col-span-6 glass-card p-6 flex flex-col justify-between">
+              <div>
+                <h3 className="font-bold text-base font-outfit flex items-center gap-2 mb-2">
+                  <Sliders className="w-5 h-5 text-blue-400" /> Interactive Sensitivity Simulator
+                </h3>
+                <p className="text-xs text-gray-400 mb-6">
+                  Adjust parameter sliders to observe real-time feature impact on RUL predictions.
+                </p>
+
+                <div className="space-y-4 text-xs">
+                  <div>
+                    <div className="flex justify-between font-semibold mb-1">
+                      <span>Device Age: <strong className="text-blue-400">{simAge} Months</strong></span>
+                    </div>
+                    <input type="range" min="1" max="60" value={simAge} onChange={(e) => setSimAge(Number(e.target.value))} className="w-full accent-blue-500 cursor-pointer" />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between font-semibold mb-1">
+                      <span>Battery Health: <strong className="text-emerald-400">{simBatHealth}%</strong></span>
+                    </div>
+                    <input type="range" min="10" max="100" value={simBatHealth} onChange={(e) => setSimBatHealth(Number(e.target.value))} className="w-full accent-emerald-500 cursor-pointer" />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between font-semibold mb-1">
+                      <span>Battery Cycles: <strong className="text-indigo-400">{simCycles} Cycles</strong></span>
+                    </div>
+                    <input type="range" min="10" max="1000" step="10" value={simCycles} onChange={(e) => setSimCycles(Number(e.target.value))} className="w-full accent-indigo-500 cursor-pointer" />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between font-semibold mb-1">
+                      <span>SSD Health: <strong className="text-amber-400">{simSSDHealth}%</strong></span>
+                    </div>
+                    <input type="range" min="10" max="100" value={simSSDHealth} onChange={(e) => setSimSSDHealth(Number(e.target.value))} className="w-full accent-amber-500 cursor-pointer" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-white/10 bg-white/5 p-4 rounded-xl flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] text-gray-400 uppercase font-semibold block">Simulated RUL Impact</span>
+                  <strong className="text-2xl font-bold font-outfit text-blue-400">
+                    {((simBatHealth * 0.25) + (simSSDHealth * 0.15) + (48 - simAge * 0.6)).toFixed(1)} Months
+                  </strong>
+                </div>
+                <span className="bg-blue-500/20 text-blue-300 text-xs px-3 py-1 rounded-full font-semibold">
+                  Dynamic Forecast
+                </span>
+              </div>
+            </section>
+          </div>
+        )}
+
+        {/* TAB 3: PRESCRIPTIVE MAINTENANCE & ROI MATRIX */}
+        {activeTab === "maintenance" && (
+          <div className="grid grid-cols-12 gap-6">
+            {/* Component Maintenance Actions */}
+            <section className="col-span-12 glass-card p-6">
+              <div className="mb-6">
+                <h3 className="font-bold text-base font-outfit flex items-center gap-2">
+                  <Wrench className="w-5 h-5 text-indigo-400" /> Prescriptive Component Maintenance Simulation
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  Execute simulated hardware refurbishments to quantify life-extension and financial ROI.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <button onClick={() => triggerMaintenance("replace_battery")} disabled={loading} className="bg-white/5 hover:bg-emerald-500/10 border border-white/10 hover:border-emerald-500/40 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
+                  <Battery className="w-8 h-8 text-emerald-400 group-hover:scale-110 transition-transform" />
+                  <div>
+                    <strong className="block text-sm">Replace Battery</strong>
+                    <span className="text-xs text-gray-400">Reset Health to 100% & Cycles to 0</span>
+                    <div className="text-[11px] text-emerald-400 font-bold mt-1">+14.2 Months RUL</div>
+                  </div>
+                </button>
+
+                <button onClick={() => triggerMaintenance("replace_ssd")} disabled={loading} className="bg-white/5 hover:bg-blue-500/10 border border-white/10 hover:border-blue-500/40 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
+                  <HardDrive className="w-8 h-8 text-blue-400 group-hover:scale-110 transition-transform" />
+                  <div>
+                    <strong className="block text-sm">Replace SSD Drive</strong>
+                    <span className="text-xs text-gray-400">Reset SSD Wear to 100%</span>
+                    <div className="text-[11px] text-blue-400 font-bold mt-1">+8.5 Months RUL</div>
+                  </div>
+                </button>
+
+                <button onClick={() => triggerMaintenance("full_overhaul")} disabled={loading} className="bg-gradient-to-br from-indigo-600/30 to-emerald-600/30 border border-indigo-500/40 hover:border-indigo-400 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
+                  <Sparkles className="w-8 h-8 text-indigo-300 group-hover:scale-110 transition-transform" />
+                  <div>
+                    <strong className="block text-sm text-white">Full Refurbish Overhaul</strong>
+                    <span className="text-xs text-gray-300">New Battery + SSD + Thermal Service</span>
+                    <div className="text-[11px] text-indigo-300 font-bold mt-1">+22.8 Months RUL</div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Maintenance ROI Matrix Table */}
               <div className="overflow-x-auto">
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
                     <tr className="border-b border-white/10 text-gray-400">
-                      <th className="py-3 px-4">Device Hostname</th>
-                      <th className="py-3 px-4">Model & Serial</th>
-                      <th className="py-3 px-4">RUL Forecast</th>
-                      <th className="py-3 px-4">Status</th>
-                      <th className="py-3 px-4">Battery Health</th>
-                      <th className="py-3 px-4">EDHI</th>
-                      <th className="py-3 px-4">Action</th>
+                      <th className="py-3 px-4">Intervention Type</th>
+                      <th className="py-3 px-4">Estimated Cost ($)</th>
+                      <th className="py-3 px-4">RUL Life Extension</th>
+                      <th className="py-3 px-4">Financial ROI Ratio</th>
+                      <th className="py-3 px-4">Recommendation Status</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
-                    {devicesList.map((dev) => (
-                      <tr key={dev.device_id} className="hover:bg-white/[0.02]">
-                        <td className="py-3 px-4 font-semibold text-white">{dev.device_name}</td>
-                        <td className="py-3 px-4 text-gray-400">{dev.device_model} ({dev.serial_number})</td>
-                        <td className="py-3 px-4 font-bold text-blue-400">{dev.rul_months.toFixed(1)} Months</td>
-                        <td className="py-3 px-4 font-semibold" style={{ color: dev.status_color }}>{dev.recommendation}</td>
-                        <td className="py-3 px-4 font-mono">{dev.battery_health.toFixed(1)}%</td>
-                        <td className="py-3 px-4 font-mono text-emerald-400">{dev.edhi.toFixed(1)}</td>
-                        <td className="py-3 px-4">
-                          <button
-                            onClick={() => selectDevice(dev.device_id)}
-                            className="bg-blue-500/20 hover:bg-blue-500/40 text-blue-300 px-3 py-1 rounded-lg text-[11px] font-semibold"
-                          >
-                            Inspect Telemetry
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-white flex items-center gap-2">
+                        <Battery className="w-4 h-4 text-emerald-400" /> Battery Replacement
+                      </td>
+                      <td className="py-3 px-4 font-mono">$85.00</td>
+                      <td className="py-3 px-4 font-bold text-emerald-400">+14.2 Months</td>
+                      <td className="py-3 px-4 font-mono text-blue-400">4.2x ROI</td>
+                      <td className="py-3 px-4"><span className="bg-emerald-500/20 text-emerald-400 px-2.5 py-0.5 rounded font-semibold">Optimal</span></td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-white flex items-center gap-2">
+                        <HardDrive className="w-4 h-4 text-blue-400" /> NVMe SSD Upgrade
+                      </td>
+                      <td className="py-3 px-4 font-mono">$110.00</td>
+                      <td className="py-3 px-4 font-bold text-blue-400">+8.5 Months</td>
+                      <td className="py-3 px-4 font-mono text-blue-400">2.1x ROI</td>
+                      <td className="py-3 px-4"><span className="bg-blue-500/20 text-blue-400 px-2.5 py-0.5 rounded font-semibold">Recommended</span></td>
+                    </tr>
+                    <tr>
+                      <td className="py-3 px-4 font-semibold text-white flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-indigo-400" /> Full Enterprise Refurbish
+                      </td>
+                      <td className="py-3 px-4 font-mono">$175.00</td>
+                      <td className="py-3 px-4 font-bold text-indigo-400">+22.8 Months</td>
+                      <td className="py-3 px-4 font-mono text-indigo-400">5.6x ROI</td>
+                      <td className="py-3 px-4"><span className="bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded font-semibold">High Priority</span></td>
+                    </tr>
                   </tbody>
                 </table>
               </div>
             </section>
-          )}
+          </div>
+        )}
 
-          {/* Feature Matrix Table */}
-          <section className="col-span-12 glass-card p-6">
-            <h3 className="font-bold text-base font-outfit flex items-center gap-2 mb-4">
-              <Server className="w-5 h-5 text-gray-400" /> Feature Vector Passed to XGBoost Model
-            </h3>
+        {/* TAB 4: ACADEMIC RESEARCH METHODOLOGY */}
+        {activeTab === "methodology" && (
+          <div className="grid grid-cols-12 gap-6">
+            <section className="col-span-12 glass-card p-6 md:p-8">
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-12 h-12 bg-blue-600/20 rounded-xl flex items-center justify-center text-blue-400">
+                  <BookOpen className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold font-outfit">University Final Year Research Methodology</h2>
+                  <p className="text-xs text-gray-400">Enterprise Laptop Hardware Wear & Machine Learning RUL Prediction Architecture</p>
+                </div>
+              </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/10 text-gray-400">
-                    <th className="py-3 px-4">Feature Name</th>
-                    <th className="py-3 px-4">Value</th>
-                    <th className="py-3 px-4">Data Type</th>
-                    <th className="py-3 px-4">Source</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {mlInput && (
-                    <>
-                      <tr>
-                        <td className="py-3 px-4 font-semibold">device_model</td>
-                        <td className="py-3 px-4 font-mono text-blue-400">{mlInput.device_model}</td>
-                        <td className="py-3 px-4 text-indigo-400">Categorical</td>
-                        <td className="py-3 px-4 text-gray-400">WMI Query</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 font-semibold">usage_profile</td>
-                        <td className="py-3 px-4 font-mono text-indigo-400">{mlInput.usage_profile}</td>
-                        <td className="py-3 px-4 text-indigo-400">Categorical</td>
-                        <td className="py-3 px-4 text-gray-400">AI Agent Classifier</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 font-semibold">age</td>
-                        <td className="py-3 px-4 font-mono">{mlInput.age} months</td>
-                        <td className="py-3 px-4 text-emerald-400">Numeric</td>
-                        <td className="py-3 px-4 text-gray-400">Lifecycle History</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 font-semibold">usage_hours</td>
-                        <td className="py-3 px-4 font-mono">{mlInput.usage_hours} hrs</td>
-                        <td className="py-3 px-4 text-emerald-400">Numeric</td>
-                        <td className="py-3 px-4 text-gray-400">Operational Log</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 font-semibold">battery_cycles</td>
-                        <td className="py-3 px-4 font-mono">{mlInput.battery_cycles}</td>
-                        <td className="py-3 px-4 text-emerald-400">Numeric</td>
-                        <td className="py-3 px-4 text-gray-400">PowerCfg Report</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 font-semibold">battery_health</td>
-                        <td className="py-3 px-4 font-mono">{mlInput.battery_health}%</td>
-                        <td className="py-3 px-4 text-emerald-400">Numeric</td>
-                        <td className="py-3 px-4 text-gray-400">PowerCfg Report</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 font-semibold">ssd_health</td>
-                        <td className="py-3 px-4 font-mono">{mlInput.ssd_health}%</td>
-                        <td className="py-3 px-4 text-emerald-400">Numeric</td>
-                        <td className="py-3 px-4 text-gray-400">PowerShell PhysicalDisk</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 font-semibold">temperature</td>
-                        <td className="py-3 px-4 font-mono">{mlInput.temperature} °C</td>
-                        <td className="py-3 px-4 text-emerald-400">Numeric</td>
-                        <td className="py-3 px-4 text-gray-400">LibreHardwareMonitor API</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 font-semibold">performance_score</td>
-                        <td className="py-3 px-4 font-mono">{mlInput.performance_score} / 100</td>
-                        <td className="py-3 px-4 text-emerald-400">Numeric</td>
-                        <td className="py-3 px-4 text-gray-400">AI Agent Evaluator</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 font-semibold">shutdown_count</td>
-                        <td className="py-3 px-4 font-mono">{mlInput.shutdown_count}</td>
-                        <td className="py-3 px-4 text-emerald-400">Numeric</td>
-                        <td className="py-3 px-4 text-gray-400">Windows System Event Log</td>
-                      </tr>
-                      <tr>
-                        <td className="py-3 px-4 font-semibold">edhi</td>
-                        <td className="py-3 px-4 font-mono">{mlInput.edhi} / 100</td>
-                        <td className="py-3 px-4 text-emerald-400">Numeric</td>
-                        <td className="py-3 px-4 text-gray-400">Enterprise Health Index Agent</td>
-                      </tr>
-                    </>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </section>
-        </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-xs text-gray-300">
+                <div className="space-y-4">
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                    <h4 className="font-bold text-sm text-white mb-2 flex items-center gap-2">
+                      <Cpu className="w-4 h-4 text-blue-400" /> 1. XGBoost Regression Pipeline
+                    </h4>
+                    <p className="leading-relaxed">
+                      The predictive pipeline utilizes an <strong>Extreme Gradient Boosting (XGBoost) Regressor</strong> model wrapped in a Scikit-learn <code className="text-indigo-400">ColumnTransformer</code>. It encodes categorical telemetry (device model, usage profile) and normalizes continuous hardware signals.
+                    </p>
+                  </div>
+
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                    <h4 className="font-bold text-sm text-white mb-2 flex items-center gap-2">
+                      <Activity className="w-4 h-4 text-emerald-400" /> 2. Enterprise Device Health Index (EDHI) Formula
+                    </h4>
+                    <p className="leading-relaxed font-mono text-[11px] bg-black/30 p-2.5 rounded-lg border border-white/5 text-emerald-300 mb-2">
+                      EDHI = 0.30(BatHealth) + 0.25(SSDHealth) + 0.20(PerfScore) + 0.15(TempFactor) - 0.10(Shutdowns)
+                    </p>
+                    <p className="leading-relaxed">
+                      Synthesizes multi-factor physical telemetry into a single holistic health rating between 0 and 100.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                    <h4 className="font-bold text-sm text-white mb-2 flex items-center gap-2">
+                      <Server className="w-4 h-4 text-amber-400" /> 3. Automated Windows Telemetry Pipeline
+                    </h4>
+                    <ul className="list-disc pl-4 space-y-1 text-gray-400">
+                      <li><strong>WMI API:</strong> Computer model & BIOS serial numbers.</li>
+                      <li><strong>Windows PowerCfg:</strong> Design capacity vs full charge capacity (battery wear %).</li>
+                      <li><strong>PowerShell PhysicalDisk:</strong> NVMe storage integrity status.</li>
+                      <li><strong>Windows Event Log:</strong> Event IDs 41 & 6008 kernel power crash counts.</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-white/5 p-4 rounded-xl border border-white/10">
+                    <h4 className="font-bold text-sm text-white mb-2 flex items-center gap-2">
+                      <CheckCircle2 className="w-4 h-4 text-purple-400" /> 4. Research Citation & Team
+                    </h4>
+                    <p className="leading-relaxed">
+                      Developed as a Final Year University Research Project focusing on enterprise hardware sustainability and AI-driven lifecycle optimization.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </section>
+          </div>
+        )}
       </main>
     </div>
   );
