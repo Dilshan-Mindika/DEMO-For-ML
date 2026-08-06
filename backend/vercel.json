@@ -1,7 +1,7 @@
 {
   "functions": {
     "api/index.py": {
-      "includeFiles": ["models/**", "../models/**"]
+      "includeFiles": "models/**"
     }
   },
   "rewrites": [
