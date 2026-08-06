@@ -6,7 +6,9 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 candidate_model_paths = [
     os.path.join(BASE_DIR, "models", "xgboost_rul_model.pkl"),
     os.path.join(os.getcwd(), "models", "xgboost_rul_model.pkl"),
-    os.path.join(os.getcwd(), "backend", "models", "xgboost_rul_model.pkl")
+    os.path.join(os.getcwd(), "backend", "models", "xgboost_rul_model.pkl"),
+    "/var/task/models/xgboost_rul_model.pkl",
+    "/var/task/backend/models/xgboost_rul_model.pkl"
 ]
 
 MODEL_PATH = os.environ.get("MODEL_PATH", candidate_model_paths[0])
