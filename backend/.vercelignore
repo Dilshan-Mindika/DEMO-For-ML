@@ -1,0 +1,11 @@
+LibreHardwareMonitor-net472/
+agent/
+tests/
+fleet_store.json
+*.bat
+*.ps1
+*.exe
+*.dll
+__pycache__/
+*.pyc
+.pytest_cache/
