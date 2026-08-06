@@ -22,11 +22,14 @@ class TelemetryData:
     battery_cycles: Optional[int]
     temperature_current: Optional[float]
     temperature_avg: Optional[float]
-    disk_health_status: Optional[List[Dict[str, Any]]]
-    ssd_health_percent: Optional[float]
-    uptime_hours: Optional[float]
-    shutdowns_30d: Optional[int]
-    timestamp: str
+    disk_health_status: Optional[List[Dict[str, Any]]] = None
+    ssd_health_percent: Optional[float] = None
+    ram_modules: Optional[List[Dict[str, Any]]] = None
+    storage_drives: Optional[List[Dict[str, Any]]] = None
+    cpu_details: Optional[Dict[str, Any]] = None
+    uptime_hours: Optional[float] = None
+    shutdowns_30d: Optional[int] = None
+    timestamp: str = ""
 
     def to_dict(self) -> Dict[str, Any]:
         return asdict(self)

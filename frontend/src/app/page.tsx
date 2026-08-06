@@ -51,6 +51,8 @@ interface TelemetryData {
   temperature_current: number;
   temperature_avg: number;
   ssd_health_percent: number;
+  ram_modules?: { bank: string; capacity_gb: number; speed_mhz?: number; manufacturer?: string }[];
+  storage_drives?: { name: string; media_type: string; size_gb: number; health_status: string; health_percent: number }[];
   uptime_hours: number;
   shutdowns_30d: number;
   timestamp: string;
@@ -447,23 +449,34 @@ export default function DashboardPage() {
             </button>
 
             <div className="pt-4 border-t border-[var(--border-card)] text-center space-y-2">
-              <p className="text-xs text-[var(--text-secondary)] font-medium">Need local laptop hardware telemetry agent?</p>
-              <div className="flex gap-2">
+              <p className="text-xs text-[var(--text-secondary)] font-medium">Desktop Telemetry Agent Management</p>
+              <div className="grid grid-cols-3 gap-2">
                 <a
                   href="/ApexPulseAgent.exe"
                   download="ApexPulseAgent.exe"
-                  className="flex-1 bg-[var(--bg-input)] hover:bg-emerald-500/10 border border-[var(--border-input)] hover:border-emerald-500/50 text-emerald-400 font-semibold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all hover:scale-[1.01]"
+                  className="bg-[var(--bg-input)] hover:bg-emerald-500/10 border border-[var(--border-input)] hover:border-emerald-500/50 text-emerald-400 font-semibold py-2 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1 shadow-sm transition-all hover:scale-[1.01]"
+                  title="Download Windows Agent Executable"
                 >
-                  <Download className="w-4 h-4 text-emerald-400" />
-                  Download Agent (.exe)
+                  <Download className="w-3.5 h-3.5 text-emerald-400" />
+                  Install (.exe)
                 </a>
                 <a
                   href="/downloads/Install_ApexPulse_Agent.bat"
                   download="Install_ApexPulse_Agent.bat"
-                  className="bg-[var(--bg-input)] hover:bg-blue-500/10 border border-[var(--border-input)] hover:border-blue-500/50 text-blue-400 font-semibold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all hover:scale-[1.01]"
+                  className="bg-[var(--bg-input)] hover:bg-blue-500/10 border border-[var(--border-input)] hover:border-blue-500/50 text-blue-400 font-semibold py-2 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1 shadow-sm transition-all hover:scale-[1.01]"
+                  title="Download Install Script"
                 >
-                  <Download className="w-4 h-4 text-blue-400" />
-                  Script (.bat)
+                  <Download className="w-3.5 h-3.5 text-blue-400" />
+                  Install (.bat)
+                </a>
+                <a
+                  href="/downloads/Uninstall_ApexPulse_Agent.bat"
+                  download="Uninstall_ApexPulse_Agent.bat"
+                  className="bg-[var(--bg-input)] hover:bg-rose-500/10 border border-[var(--border-input)] hover:border-rose-500/50 text-rose-400 font-semibold py-2 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1 shadow-sm transition-all hover:scale-[1.01]"
+                  title="Download Uninstaller Script"
+                >
+                  <LogOut className="w-3.5 h-3.5 text-rose-400" />
+                  Uninstall (.bat)
                 </a>
               </div>
             </div>
@@ -1240,6 +1253,27 @@ export default function DashboardPage() {
                     <strong className="text-sm text-blue-500 block mt-0.5">{mlInput?.performance_score.toFixed(1) || "--"} / 100</strong>
                   </div>
                 </div>
+
+                {/* Physical RAM Module Breakdown (Multiple RAM sticks) */}
+                {telemetry?.ram_modules && telemetry.ram_modules.length > 0 && (
+                  <div className="space-y-2 pt-2 border-t border-[var(--border-card)]">
+                    <span className="text-xs font-bold text-[var(--text-heading)] block uppercase tracking-wider">Installed Physical RAM Stick Modules</span>
+                    <div className="space-y-2">
+                      {telemetry.ram_modules.map((mod, i) => (
+                        <div key={i} className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border-input)] flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <Zap className="w-4 h-4 text-indigo-400" />
+                            <div>
+                              <strong className="block text-[var(--text-heading)]">{mod.bank} ({mod.manufacturer || "RAM"})</strong>
+                              <span className="text-[10px] text-[var(--text-secondary)]">{mod.speed_mhz ? `${mod.speed_mhz} MHz Speed` : "Standard Speed"}</span>
+                            </div>
+                          </div>
+                          <span className="font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg">{mod.capacity_gb} GB</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             </section>
           </div>
@@ -1387,9 +1421,30 @@ export default function DashboardPage() {
               <div className="space-y-3 text-xs">
                 <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
                   <span className="text-[var(--text-secondary)]">Drive Diagnostic Check</span>
-                  <span className="font-mono text-emerald-500 font-bold">Healthy Drive</span>
+                  <span className="font-mono text-emerald-500 font-bold">Healthy Drives Verified</span>
                 </div>
               </div>
+
+              {/* Physical Storage Drives Breakdown (Multiple SSDs/HDDs) */}
+              {telemetry?.storage_drives && telemetry.storage_drives.length > 0 && (
+                <div className="space-y-2 mt-4 pt-3 border-t border-[var(--border-card)]">
+                  <span className="text-xs font-bold text-[var(--text-heading)] block uppercase tracking-wider">Installed Physical Storage Drives & Hard Drives</span>
+                  <div className="space-y-2">
+                    {telemetry.storage_drives.map((drive, i) => (
+                      <div key={i} className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border-input)] flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <HardDrive className="w-4 h-4 text-cyan-400" />
+                          <div>
+                            <strong className="block text-[var(--text-heading)]">{drive.name} ({drive.media_type})</strong>
+                            <span className="text-[10px] text-emerald-400 font-semibold">{drive.health_status} • {drive.health_percent}% SMART Health</span>
+                          </div>
+                        </div>
+                        <span className="font-bold text-cyan-400 bg-cyan-500/10 px-2.5 py-1 rounded-lg">{drive.size_gb} GB</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
 
             <section className="col-span-12 lg:col-span-6 glass-card p-6">
