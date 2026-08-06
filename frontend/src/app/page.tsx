@@ -23,6 +23,7 @@ import {
   Sun,
   Moon,
   Sliders,
+  Download,
   Zap,
   CheckCircle2,
   PieChart,
@@ -105,7 +106,7 @@ interface FleetSummary {
   avg_edhi: number;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://demo-for-ml-back.vercel.app";
 
 // Simple SVG Donut/Pie Chart Component
 const SimplePieChartCard = ({
@@ -421,6 +422,28 @@ export default function DashboardPage() {
             >
               Sign In to Laptop Portal
             </button>
+
+            <div className="pt-4 border-t border-[var(--border-card)] text-center space-y-2">
+              <p className="text-xs text-[var(--text-secondary)] font-medium">Need local laptop hardware telemetry agent?</p>
+              <div className="flex gap-2">
+                <a
+                  href="/ApexPulseAgent.exe"
+                  download="ApexPulseAgent.exe"
+                  className="flex-1 bg-[var(--bg-input)] hover:bg-emerald-500/10 border border-[var(--border-input)] hover:border-emerald-500/50 text-emerald-400 font-semibold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all hover:scale-[1.01]"
+                >
+                  <Download className="w-4 h-4 text-emerald-400" />
+                  Download Agent (.exe)
+                </a>
+                <a
+                  href="/downloads/Install_ApexPulse_Agent.bat"
+                  download="Install_ApexPulse_Agent.bat"
+                  className="bg-[var(--bg-input)] hover:bg-blue-500/10 border border-[var(--border-input)] hover:border-blue-500/50 text-blue-400 font-semibold py-2.5 px-3 rounded-xl text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all hover:scale-[1.01]"
+                >
+                  <Download className="w-4 h-4 text-blue-400" />
+                  Script (.bat)
+                </a>
+              </div>
+            </div>
           </form>
         </div>
       </div>
