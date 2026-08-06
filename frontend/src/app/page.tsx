@@ -746,11 +746,11 @@ export default function DashboardPage() {
                 className="bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] px-4 py-2.5 rounded-full text-xs font-semibold focus:outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer"
               >
                 <option value="local" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>
-                  This Laptop ({telemetry?.device_name || "Device"})
+                  This Laptop ({telemetry?.device_name && !telemetry.device_name.startsWith("169.254.") ? telemetry.device_name : "Web Preview"})
                 </option>
                 {devicesList.map((d) => (
                   <option key={d.device_id} value={d.device_id} className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>
-                    {d.device_name} ({d.device_model})
+                    {d.device_name && !d.device_name.startsWith("169.254.") ? d.device_name : `Cloud Session (${d.device_id.slice(0, 12)})`} ({d.device_model})
                   </option>
                 ))}
               </select>
@@ -871,7 +871,7 @@ export default function DashboardPage() {
                   AI Life Expectancy Forecast
                 </span>
                 <span className="text-xs text-[var(--text-secondary)]">
-                  Laptop: <strong>{telemetry?.device_name || "--"}</strong> • Serial: <strong>{telemetry?.serial_number || "--"}</strong> • Updated: <strong>{lastUpdatedTime || "--"}</strong>
+                  Laptop: <strong>{telemetry?.device_name && !telemetry.device_name.startsWith("169.254.") ? telemetry.device_name : "Web Preview Session"}</strong> • Serial: <strong>{telemetry?.serial_number || "--"}</strong> • Updated: <strong>{lastUpdatedTime || "--"}</strong>
                 </span>
               </div>
 
