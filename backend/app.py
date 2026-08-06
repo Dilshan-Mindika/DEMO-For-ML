@@ -67,6 +67,8 @@ def index_root():
         "status": "online",
         "service": "ApexPulse Enterprise Laptop Lifecycle & Fleet Monitoring API",
         "model_loaded": predictor.model is not None,
+        "model_error": predictor.load_error,
+        "model_path": predictor.model_path,
         "monitored_devices": len(fleet_mgr.get_all_devices()),
         "endpoints": {
             "health": "/api/health",
@@ -83,6 +85,8 @@ def health_check():
         "status": "online",
         "service": "Enterprise Laptop Lifecycle Prediction API",
         "model_loaded": predictor.model is not None,
+        "model_error": predictor.load_error,
+        "model_path": predictor.model_path,
         "monitored_devices": len(fleet_mgr.get_all_devices())
     })
 

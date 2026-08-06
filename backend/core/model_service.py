@@ -47,6 +47,7 @@ class LifecyclePredictor:
     def __init__(self, model_path: str = MODEL_PATH):
         self.model_path = model_path
         self.model = None
+        self.load_error = None
         self.load_model()
 
     def load_model(self):
@@ -63,7 +64,7 @@ class LifecyclePredictor:
                     break
 
         if not os.path.exists(target_path):
-            print(f"[!] Warning: Trained model file not found. Fallback heuristic will be used.")
+            self.load_error = f"Model file not found in searched paths"
             self.model = None
             return
 
@@ -72,8 +73,10 @@ class LifecyclePredictor:
                 warnings.simplefilter("ignore")
                 self.model = joblib.load(target_path)
                 self.model_path = target_path
+                self.load_error = None
                 print(f"[+] Successfully loaded ML RUL predictor model from {target_path}")
         except Exception as e:
+            self.load_error = str(e)
             print(f"[!] Warning: Failed to load model from {target_path}: {e}. Fallback heuristic active.")
             self.model = None
 
