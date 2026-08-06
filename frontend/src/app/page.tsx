@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Cpu,
   HardDrive,
@@ -14,7 +14,6 @@ import {
   Eye,
   EyeOff,
   Clock,
-  Server,
   Users,
   ChevronDown,
   Mail,
@@ -25,11 +24,9 @@ import {
   Sliders,
   Download,
   Zap,
-  CheckCircle2,
   PieChart,
   BarChart3,
-  X,
-  Info
+  X
 } from "lucide-react";
 import { authenticateUser, UserAccount } from "./auth";
 
@@ -165,7 +162,19 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string>("telemetry");
 
   // Authentication State
-  const [currentUser, setCurrentUser] = useState<UserAccount | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
+    if (typeof window !== "undefined") {
+      const savedUser = localStorage.getItem("apex_user");
+      if (savedUser) {
+        try {
+          return JSON.parse(savedUser);
+        } catch {
+          return null;
+        }
+      }
+    }
+    return null;
+  });
   const [loginEmail, setLoginEmail] = useState<string>("");
   const [loginPassword, setLoginPassword] = useState<string>("");
   const [showPassword, setShowPassword] = useState<boolean>(false);
@@ -193,15 +202,6 @@ export default function DashboardPage() {
   const [simBatHealth, setSimBatHealth] = useState<number>(85);
   const [simSSDHealth, setSimSSDHealth] = useState<number>(90);
 
-  useEffect(() => {
-    const savedUser = localStorage.getItem("apex_user");
-    if (savedUser) {
-      try {
-        setCurrentUser(JSON.parse(savedUser));
-      } catch (e) {}
-    }
-  }, []);
-
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
   };
@@ -224,7 +224,7 @@ export default function DashboardPage() {
     localStorage.removeItem("apex_user");
   };
 
-  const fetchFleet = async () => {
+  const fetchFleet = useCallback(async () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/devices`);
       if (res.ok) {
@@ -232,12 +232,12 @@ export default function DashboardPage() {
         setFleetSummary(json.summary);
         setDevicesList(json.devices);
       }
-    } catch (e) {
-      console.error("Fleet fetch error:", e);
+    } catch (_e) {
+      console.error("Fleet fetch error:", _e);
     }
-  };
+  }, []);
 
-  const fetchPrediction = async (showSpinner = false, age = manualAge, usage = dailyUsage) => {
+  const fetchPrediction = useCallback(async (showSpinner = false, age = manualAge, usage = dailyUsage) => {
     if (showSpinner) setLoading(true);
     setError(null);
     try {
@@ -249,7 +249,7 @@ export default function DashboardPage() {
       };
 
       if (selectedDeviceId !== "local") {
-        endpoint = `${API_BASE_URL}/api/devices/${selectedDeviceId}`;
+        endpoint = `${API_BASE_URL}/api/devices/${encodeURIComponent(selectedDeviceId)}`;
         options = { method: "GET" };
       }
 
@@ -270,17 +270,19 @@ export default function DashboardPage() {
         setSimSSDHealth(ml.ssd_health);
       }
       fetchFleet();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err.message || "Unable to connect to laptop monitoring server.");
+      const msg = err instanceof Error ? err.message : "Unable to connect to laptop monitoring server.";
+      setError(msg);
     } finally {
       if (showSpinner) setLoading(false);
     }
-  };
+  }, [manualAge, dailyUsage, selectedDeviceId, fetchFleet]);
 
   const selectDevice = async (deviceId: string) => {
     setSelectedDeviceId(deviceId);
     setLoading(true);
+    setError(null);
     try {
       let endpoint = `${API_BASE_URL}/api/predict`;
       let options: RequestInit = {
@@ -290,17 +292,35 @@ export default function DashboardPage() {
       };
 
       if (deviceId !== "local") {
-        endpoint = `${API_BASE_URL}/api/devices/${deviceId}`;
+        endpoint = `${API_BASE_URL}/api/devices/${encodeURIComponent(deviceId)}`;
         options = { method: "GET" };
       }
 
       const res = await fetch(endpoint, options);
-      if (!res.ok) throw new Error("Device details fetch failed");
+      if (!res.ok) {
+        const fallbackRes = await fetch(`${API_BASE_URL}/api/predict`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ age: manualAge, daily_usage: dailyUsage }),
+        });
+        if (fallbackRes.ok) {
+          const fallbackJson = await fallbackRes.json();
+          setData({ telemetry: fallbackJson.telemetry, prediction: fallbackJson.prediction });
+          setLastUpdatedTime(new Date().toLocaleTimeString());
+          return;
+        }
+        throw new Error("Unable to load device details.");
+      }
+
       const json = await res.json();
-      setData({ telemetry: json.telemetry, prediction: json.prediction });
-      setLastUpdatedTime(new Date().toLocaleTimeString());
-    } catch (err: any) {
-      alert(`Device Selection Error: ${err.message}`);
+      if (json.telemetry && json.prediction) {
+        setData({ telemetry: json.telemetry, prediction: json.prediction });
+        setLastUpdatedTime(new Date().toLocaleTimeString());
+      }
+    } catch (err: unknown) {
+      console.error("Device selection error:", err);
+      const msg = err instanceof Error ? err.message : "Device details update failed.";
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -331,8 +351,9 @@ export default function DashboardPage() {
             }
           : null
       );
-    } catch (err: any) {
-      alert(`Maintenance Error: ${err.message}`);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Maintenance simulation error";
+      alert(`Maintenance Error: ${msg}`);
     } finally {
       setLoading(false);
     }
@@ -349,7 +370,7 @@ export default function DashboardPage() {
     }, 5000);
 
     return () => clearInterval(intervalId);
-  }, [currentUser, selectedDeviceId, manualAge, dailyUsage]);
+  }, [currentUser, fetchPrediction]);
 
   // Render Login View if unauthenticated
   if (!currentUser) {

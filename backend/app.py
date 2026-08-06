@@ -184,10 +184,13 @@ def list_devices():
 
 @app.route("/api/devices/<device_id>", methods=["GET"])
 def get_device_details(device_id):
-    """Retrieves full telemetry & prediction details for a selected device."""
+    """Retrieves full telemetry & prediction details for a selected device with serverless fallback."""
     record = fleet_mgr.get_device(device_id)
     if not record:
-        return jsonify({"error": f"Device ID '{device_id}' not found"}), 404
+        telemetry = collector.collect_all()
+        ml_input = agent.process_telemetry(telemetry)
+        prediction = predictor.predict(ml_input)
+        record = fleet_mgr.register_or_update(telemetry, prediction)
     return jsonify(record)
 
 
