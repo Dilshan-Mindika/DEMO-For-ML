@@ -52,6 +52,22 @@ def verify_api_key_if_required() -> bool:
     return req_key == API_KEY
 
 
+@app.route("/", methods=["GET"])
+def index_root():
+    return jsonify({
+        "status": "online",
+        "service": "ApexPulse Enterprise Laptop Lifecycle & Fleet Monitoring API",
+        "model_loaded": predictor.model is not None,
+        "monitored_devices": len(fleet_mgr.get_all_devices()),
+        "endpoints": {
+            "health": "/api/health",
+            "predict": "/api/predict",
+            "devices": "/api/devices",
+            "telemetry": "/api/devices/telemetry"
+        }
+    })
+
+
 @app.route("/api/health", methods=["GET"])
 def health_check():
     return jsonify({

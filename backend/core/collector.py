@@ -275,39 +275,67 @@ class HardwareCollector:
         if not bypass_cache and self._cached_telemetry and (now - self._cache_timestamp) < self.cache_ttl:
             return self._cached_telemetry
 
-        dev_info = self.get_device_info()
-        basic = self.get_basic_metrics()
-        wear = self.get_battery_wear()
-        temp = self.get_temperature_from_lhm()
-        uptime = self.get_uptime_hours()
-        shutdowns = self.get_shutdown_count_30d()
-        ssd_health = self.get_ssd_health_percent()
+        try:
+            dev_info = self.get_device_info()
+            basic = self.get_basic_metrics()
+            wear = self.get_battery_wear()
+            temp = self.get_temperature_from_lhm()
+            uptime = self.get_uptime_hours()
+            shutdowns = self.get_shutdown_count_30d()
+            ssd_health = self.get_ssd_health_percent()
 
-        telemetry = TelemetryData(
-            device_name=dev_info["device_name"],
-            device_model=dev_info["device_model"],
-            os_name=dev_info["os_name"],
-            os_version=dev_info["os_version"],
-            manufacturer=dev_info["manufacturer"],
-            serial_number=dev_info["serial_number"],
-            cpu_usage=basic["cpu_usage"],
-            ram_usage=basic["ram_usage"],
-            disk_usage=basic["disk_usage"],
-            battery_percent=basic["battery_percent"],
-            power_plugged=basic["power_plugged"],
-            design_capacity_mwh=wear["design_capacity_mwh"],
-            full_charge_capacity_mwh=wear["full_charge_capacity_mwh"],
-            battery_health=wear["battery_health"],
-            battery_wear=wear["battery_wear"],
-            battery_cycles=wear["battery_cycles"],
-            temperature_current=temp["temperature_current"],
-            temperature_avg=temp["temperature_avg"],
-            disk_health_status=[{"FriendlyName": "PhysicalDisk0", "HealthStatus": "Healthy"}],
-            ssd_health_percent=ssd_health,
-            uptime_hours=uptime,
-            shutdowns_30d=shutdowns,
-            timestamp=datetime.now().isoformat()
-        )
+            telemetry = TelemetryData(
+                device_name=dev_info.get("device_name", "Vercel-Serverless-Host"),
+                device_model=dev_info.get("device_model", "Enterprise Laptop"),
+                os_name=dev_info.get("os_name", "Linux"),
+                os_version=dev_info.get("os_version", "Serverless"),
+                manufacturer=dev_info.get("manufacturer", "Cloud Host"),
+                serial_number=dev_info.get("serial_number", "N/A"),
+                cpu_usage=basic.get("cpu_usage", 18.5),
+                ram_usage=basic.get("ram_usage", 45.0),
+                disk_usage=basic.get("disk_usage", 38.0),
+                battery_percent=basic.get("battery_percent", 92.0),
+                power_plugged=basic.get("power_plugged", True),
+                design_capacity_mwh=wear.get("design_capacity_mwh"),
+                full_charge_capacity_mwh=wear.get("full_charge_capacity_mwh"),
+                battery_health=wear.get("battery_health", DEFAULT_BATTERY_HEALTH),
+                battery_wear=wear.get("battery_wear", 0.0),
+                battery_cycles=wear.get("battery_cycles", 150),
+                temperature_current=temp.get("temperature_current", DEFAULT_TEMPERATURE),
+                temperature_avg=temp.get("temperature_avg", DEFAULT_TEMPERATURE),
+                disk_health_status=[{"FriendlyName": "PhysicalDisk0", "HealthStatus": "Healthy"}],
+                ssd_health_percent=ssd_health,
+                uptime_hours=uptime,
+                shutdowns_30d=shutdowns,
+                timestamp=datetime.now().isoformat()
+            )
+        except Exception as err:
+            print(f"[!] Warning: Hardware telemetry collection fallback triggered: {err}")
+            telemetry = TelemetryData(
+                device_name="Vercel-Serverless-Host",
+                device_model="Enterprise Laptop",
+                os_name="Linux",
+                os_version="Serverless",
+                manufacturer="Cloud Host",
+                serial_number="N/A",
+                cpu_usage=18.5,
+                ram_usage=45.0,
+                disk_usage=38.0,
+                battery_percent=92.0,
+                power_plugged=True,
+                design_capacity_mwh=None,
+                full_charge_capacity_mwh=None,
+                battery_health=DEFAULT_BATTERY_HEALTH,
+                battery_wear=0.0,
+                battery_cycles=150,
+                temperature_current=DEFAULT_TEMPERATURE,
+                temperature_avg=DEFAULT_TEMPERATURE,
+                disk_health_status=[{"FriendlyName": "PhysicalDisk0", "HealthStatus": "Healthy"}],
+                ssd_health_percent=DEFAULT_SSD_HEALTH,
+                uptime_hours=24.0,
+                shutdowns_30d=DEFAULT_SHUTDOWN_COUNT,
+                timestamp=datetime.now().isoformat()
+            )
 
         self._cached_telemetry = telemetry
         self._cache_timestamp = now

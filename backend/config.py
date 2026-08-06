@@ -1,7 +1,20 @@
 import os
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-MODEL_PATH = os.path.join(BASE_DIR, "models", "xgboost_rul_model.pkl")
+
+# Multi-location model resolution for Vercel / serverless environments
+candidate_model_paths = [
+    os.path.join(BASE_DIR, "models", "xgboost_rul_model.pkl"),
+    os.path.join(os.getcwd(), "models", "xgboost_rul_model.pkl"),
+    os.path.join(os.getcwd(), "backend", "models", "xgboost_rul_model.pkl")
+]
+
+MODEL_PATH = os.environ.get("MODEL_PATH", candidate_model_paths[0])
+for p in candidate_model_paths:
+    if os.path.exists(p):
+        MODEL_PATH = p
+        break
+
 LHM_URL = os.environ.get("LHM_URL", "http://127.0.0.1:8085/data.json")
 LHM_DIR = os.path.join(BASE_DIR, "LibreHardwareMonitor-net472")
 LHM_EXE = os.path.join(LHM_DIR, "LibreHardwareMonitor.exe")
