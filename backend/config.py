@@ -5,10 +5,14 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 # Multi-location model resolution for Vercel / serverless environments
 candidate_model_paths = [
     os.path.join(BASE_DIR, "models", "xgboost_rul_model.pkl"),
+    os.path.join(os.path.dirname(BASE_DIR), "models", "xgboost_rul_model.pkl"),
     os.path.join(os.getcwd(), "models", "xgboost_rul_model.pkl"),
     os.path.join(os.getcwd(), "backend", "models", "xgboost_rul_model.pkl"),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "models", "xgboost_rul_model.pkl")),
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "models", "xgboost_rul_model.pkl")),
     "/var/task/models/xgboost_rul_model.pkl",
-    "/var/task/backend/models/xgboost_rul_model.pkl"
+    "/var/task/backend/models/xgboost_rul_model.pkl",
+    "/var/task/api/models/xgboost_rul_model.pkl"
 ]
 
 MODEL_PATH = os.environ.get("MODEL_PATH", candidate_model_paths[0])

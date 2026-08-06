@@ -50,18 +50,31 @@ class LifecyclePredictor:
         self.load_model()
 
     def load_model(self):
-        if not os.path.exists(self.model_path):
-            print(f"[!] Warning: Trained model file not found at: {self.model_path}. Fallback heuristic will be used.")
+        target_path = self.model_path
+        if not os.path.exists(target_path):
+            try:
+                from backend.config import candidate_model_paths
+            except ImportError:
+                from config import candidate_model_paths
+
+            for p in candidate_model_paths:
+                if os.path.exists(p):
+                    target_path = p
+                    break
+
+        if not os.path.exists(target_path):
+            print(f"[!] Warning: Trained model file not found. Fallback heuristic will be used.")
             self.model = None
             return
 
         try:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
-                self.model = joblib.load(self.model_path)
-                print(f"[+] Successfully loaded ML RUL predictor model from {self.model_path}")
+                self.model = joblib.load(target_path)
+                self.model_path = target_path
+                print(f"[+] Successfully loaded ML RUL predictor model from {target_path}")
         except Exception as e:
-            print(f"[!] Warning: Failed to load model from {self.model_path}: {e}. Fallback heuristic active.")
+            print(f"[!] Warning: Failed to load model from {target_path}: {e}. Fallback heuristic active.")
             self.model = None
 
     def prepare_dataframe(self, ml_input: MLInputSchema) -> pd.DataFrame:

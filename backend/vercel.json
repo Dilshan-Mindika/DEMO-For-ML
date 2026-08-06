@@ -1,8 +1,7 @@
 {
   "functions": {
     "api/index.py": {
-      "includeFiles": "models/xgboost_rul_model.pkl",
-      "excludeFiles": "{LibreHardwareMonitor-net472/**,agent/**,tests/**,*.bat,*.ps1,*.exe,**/tests/**,**/doc/**,**/documentation/**,*.pyc,*.pyo}"
+      "includeFiles": ["models/**", "../models/**"]
     }
   },
   "rewrites": [
