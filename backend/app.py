@@ -11,13 +11,22 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from backend.config import BASE_DIR, SERVER_PORT, API_KEY, ALLOWED_ORIGINS
-from backend.core.collector import HardwareCollector
-from backend.core.agent import DeviceHealthAgent
-from backend.core.model_service import LifecyclePredictor
-from backend.core.component_manager import ComponentMaintenanceManager
-from backend.core.fleet_manager import FleetManager
-from backend.models.telemetry_schema import TelemetryData, MLInputSchema
+try:
+    from backend.config import BASE_DIR, SERVER_PORT, API_KEY, ALLOWED_ORIGINS
+    from backend.core.collector import HardwareCollector
+    from backend.core.agent import DeviceHealthAgent
+    from backend.core.model_service import LifecyclePredictor
+    from backend.core.component_manager import ComponentMaintenanceManager
+    from backend.core.fleet_manager import FleetManager
+    from backend.models.telemetry_schema import TelemetryData, MLInputSchema
+except ImportError:
+    from config import BASE_DIR, SERVER_PORT, API_KEY, ALLOWED_ORIGINS
+    from core.collector import HardwareCollector
+    from core.agent import DeviceHealthAgent
+    from core.model_service import LifecyclePredictor
+    from core.component_manager import ComponentMaintenanceManager
+    from core.fleet_manager import FleetManager
+    from models.telemetry_schema import TelemetryData, MLInputSchema
 
 app = Flask(__name__)
 
