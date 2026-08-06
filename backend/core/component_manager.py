@@ -1,5 +1,8 @@
 from typing import Dict, Any
-from backend.models.telemetry_schema import MLInputSchema
+try:
+    from backend.models.telemetry_schema import MLInputSchema
+except ImportError:
+    from models.telemetry_schema import MLInputSchema
 
 
 class ComponentMaintenanceManager:

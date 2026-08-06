@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import time
 import socket
 import psutil
 import platform
@@ -15,18 +16,41 @@ try:
 except ImportError:
     wmi = None
 
-from backend.config import LHM_URL, DEFAULT_BATTERY_HEALTH, DEFAULT_SSD_HEALTH, DEFAULT_TEMPERATURE, DEFAULT_SHUTDOWN_COUNT
-from backend.models.telemetry_schema import TelemetryData
+try:
+    from backend.config import (
+        LHM_URL,
+        CACHE_TTL_SECONDS,
+        DEFAULT_BATTERY_HEALTH,
+        DEFAULT_SSD_HEALTH,
+        DEFAULT_TEMPERATURE,
+        DEFAULT_SHUTDOWN_COUNT
+    )
+    from backend.models.telemetry_schema import TelemetryData
+except ImportError:
+    from config import (
+        LHM_URL,
+        CACHE_TTL_SECONDS,
+        DEFAULT_BATTERY_HEALTH,
+        DEFAULT_SSD_HEALTH,
+        DEFAULT_TEMPERATURE,
+        DEFAULT_SHUTDOWN_COUNT
+    )
+    from models.telemetry_schema import TelemetryData
 
 
 class HardwareCollector:
     """
     Object-Oriented Hardware Telemetry Collector.
     Gathers metrics from WMI, psutil, Windows PowerCfg, Event Logs, and LibreHardwareMonitor.
+    Features OS-awareness and response caching for low latency.
     """
 
-    def __init__(self, lhm_url: str = LHM_URL):
+    def __init__(self, lhm_url: str = LHM_URL, cache_ttl: int = CACHE_TTL_SECONDS):
         self.lhm_url = lhm_url
+        self.cache_ttl = cache_ttl
+        self._cached_telemetry: Optional[TelemetryData] = None
+        self._cache_timestamp: float = 0.0
+        self.is_windows = platform.system().lower() == "windows"
 
     def get_device_info(self) -> Dict[str, Any]:
         info = {
@@ -38,7 +62,7 @@ class HardwareCollector:
             "serial_number": "N/A"
         }
 
-        if wmi:
+        if self.is_windows and wmi:
             try:
                 c = wmi.WMI()
                 system_list = c.Win32_ComputerSystem()
@@ -59,7 +83,7 @@ class HardwareCollector:
 
     def get_basic_metrics(self) -> Dict[str, Any]:
         try:
-            cpu_usage = psutil.cpu_percent(interval=0.1)
+            cpu_usage = psutil.cpu_percent(interval=0.05)
         except Exception:
             cpu_usage = 18.5
 
@@ -69,7 +93,7 @@ class HardwareCollector:
             ram_usage = 45.0
 
         try:
-            disk_path = "C:\\" if os.name == "nt" else "/"
+            disk_path = "C:\\" if self.is_windows else "/"
             disk_usage = psutil.disk_usage(disk_path).percent
         except Exception:
             disk_usage = 38.0
@@ -99,7 +123,7 @@ class HardwareCollector:
             return 24.0
 
     def get_battery_wear(self) -> Dict[str, Any]:
-        """Runs powercfg /batteryreport and extracts capacity metrics into temp directory."""
+        """Runs powercfg /batteryreport on Windows and extracts capacity metrics into temp directory."""
         result = {
             "design_capacity_mwh": None,
             "full_charge_capacity_mwh": None,
@@ -108,16 +132,18 @@ class HardwareCollector:
             "battery_cycles": 150
         }
 
+        if not self.is_windows:
+            return result
+
         try:
             temp_dir = tempfile.gettempdir()
             report_path = os.path.join(temp_dir, "apex_battery_report.html")
 
             subprocess.run(
                 ["powercfg", "/batteryreport", "/output", report_path],
-                shell=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
-                timeout=10
+                timeout=5
             )
 
             if os.path.exists(report_path):
@@ -148,7 +174,10 @@ class HardwareCollector:
         return result
 
     def get_shutdown_count_30d(self) -> int:
-        """Counts kernel power crashes (41/6008) in the last 30 days via PowerShell."""
+        """Counts kernel power crashes (41/6008) in the last 30 days via PowerShell on Windows."""
+        if not self.is_windows:
+            return DEFAULT_SHUTDOWN_COUNT
+
         try:
             ps_script = r"""
             $count41 = (Get-WinEvent -FilterHashtable @{LogName='System'; ID=41; StartTime=(Get-Date).AddDays(-30)} -ErrorAction SilentlyContinue | Measure-Object).Count
@@ -159,7 +188,7 @@ class HardwareCollector:
                 ["powershell", "-NoProfile", "-Command", ps_script],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=5
             )
             out = res.stdout.strip()
             if out.isdigit():
@@ -169,7 +198,10 @@ class HardwareCollector:
         return DEFAULT_SHUTDOWN_COUNT
 
     def get_ssd_health_percent(self) -> float:
-        """Queries physical disk status via PowerShell."""
+        """Queries physical disk status via PowerShell on Windows."""
+        if not self.is_windows:
+            return DEFAULT_SSD_HEALTH
+
         try:
             ps_script = r"""
             $disks = Get-PhysicalDisk | Select FriendlyName, HealthStatus
@@ -179,7 +211,7 @@ class HardwareCollector:
                 ["powershell", "-NoProfile", "-Command", ps_script],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=5
             )
             out = res.stdout.strip()
             if out:
@@ -204,7 +236,7 @@ class HardwareCollector:
     def get_temperature_from_lhm(self) -> Dict[str, Optional[float]]:
         """Queries LibreHardwareMonitor JSON endpoint."""
         try:
-            resp = requests.get(self.lhm_url, timeout=3)
+            resp = requests.get(self.lhm_url, timeout=2)
             if resp.status_code == 200:
                 data = resp.json()
                 temps = []
@@ -238,7 +270,11 @@ class HardwareCollector:
             for item in node:
                 self._flatten_lhm_nodes(item, temps)
 
-    def collect_all(self) -> TelemetryData:
+    def collect_all(self, bypass_cache: bool = False) -> TelemetryData:
+        now = time.time()
+        if not bypass_cache and self._cached_telemetry and (now - self._cache_timestamp) < self.cache_ttl:
+            return self._cached_telemetry
+
         dev_info = self.get_device_info()
         basic = self.get_basic_metrics()
         wear = self.get_battery_wear()
@@ -247,7 +283,7 @@ class HardwareCollector:
         shutdowns = self.get_shutdown_count_30d()
         ssd_health = self.get_ssd_health_percent()
 
-        return TelemetryData(
+        telemetry = TelemetryData(
             device_name=dev_info["device_name"],
             device_model=dev_info["device_model"],
             os_name=dev_info["os_name"],
@@ -272,3 +308,7 @@ class HardwareCollector:
             shutdowns_30d=shutdowns,
             timestamp=datetime.now().isoformat()
         )
+
+        self._cached_telemetry = telemetry
+        self._cache_timestamp = now
+        return telemetry

@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
-from backend.config import BASE_DIR
+from backend.config import BASE_DIR, SERVER_PORT, API_KEY, ALLOWED_ORIGINS
 from backend.core.collector import HardwareCollector
 from backend.core.agent import DeviceHealthAgent
 from backend.core.model_service import LifecyclePredictor
@@ -20,7 +20,12 @@ from backend.core.fleet_manager import FleetManager
 from backend.models.telemetry_schema import TelemetryData, MLInputSchema
 
 app = Flask(__name__)
-CORS(app)  # Enable Cross-Origin Resource Sharing for Next.js frontend
+
+# Configure Cross-Origin Resource Sharing
+if ALLOWED_ORIGINS == "*":
+    CORS(app)
+else:
+    CORS(app, origins=[o.strip() for o in ALLOWED_ORIGINS.split(",") if o.strip()])
 
 # Singleton OOP Services
 collector = HardwareCollector()
@@ -30,10 +35,21 @@ maintenance_mgr = ComponentMaintenanceManager()
 fleet_mgr = FleetManager()
 
 # Auto-register local host on startup
-local_telemetry = collector.collect_all()
-local_input = agent.process_telemetry(local_telemetry)
-local_pred = predictor.predict(local_input)
-fleet_mgr.register_or_update(local_telemetry, local_pred)
+try:
+    local_telemetry = collector.collect_all()
+    local_input = agent.process_telemetry(local_telemetry)
+    local_pred = predictor.predict(local_input)
+    fleet_mgr.register_or_update(local_telemetry, local_pred)
+except Exception as err:
+    print(f"[!] Warning: Initial startup telemetry collection skipped: {err}")
+
+
+def verify_api_key_if_required() -> bool:
+    """Verifies X-API-Key request header if APEXPULSE_API_KEY is configured in backend environment."""
+    if not API_KEY:
+        return True
+    req_key = request.headers.get("X-API-Key") or request.headers.get("Authorization", "").replace("Bearer ", "")
+    return req_key == API_KEY
 
 
 @app.route("/api/health", methods=["GET"])
@@ -49,11 +65,24 @@ def health_check():
 @app.route("/api/predict", methods=["POST", "GET"])
 def predict_rul():
     try:
-        params = request.get_json(silent=True) or {}
-        manual_age = float(params.get("age", request.args.get("age", 24.0)))
-        daily_usage = float(params.get("daily_usage", request.args.get("daily_usage", 6.5)))
+        params = request.get_json(silent=True)
+        if not isinstance(params, dict):
+            params = {}
 
-        # 1. Collect local hardware telemetry
+        raw_age = params.get("age", request.args.get("age", 24.0))
+        raw_usage = params.get("daily_usage", request.args.get("daily_usage", 6.5))
+
+        try:
+            manual_age = float(raw_age)
+        except (ValueError, TypeError):
+            manual_age = 24.0
+
+        try:
+            daily_usage = float(raw_usage)
+        except (ValueError, TypeError):
+            daily_usage = 6.5
+
+        # 1. Collect hardware telemetry
         telemetry = collector.collect_all()
 
         # 2. Agent processing
@@ -86,12 +115,17 @@ def predict_rul():
 def receive_client_telemetry():
     """API endpoint for remote client agents running on enterprise laptops."""
     try:
-        data = request.get_json()
-        if not data:
-            return jsonify({"error": "No JSON payload provided"}), 400
+        if not verify_api_key_if_required():
+            return jsonify({"error": "Unauthorized: Invalid or missing X-API-Key"}), 401
 
-        # Construct TelemetryData object
-        telemetry = TelemetryData(**data)
+        data = request.get_json(silent=True)
+        if not isinstance(data, dict):
+            return jsonify({"error": "Invalid JSON payload provided"}), 400
+
+        # Construct TelemetryData object with schema filtering
+        valid_fields = TelemetryData.__dataclass_fields__.keys()
+        filtered_data = {k: v for k, v in data.items() if k in valid_fields}
+        telemetry = TelemetryData(**filtered_data)
 
         # Run AI Agent & ML Prediction
         ml_input = agent.process_telemetry(telemetry)
@@ -131,16 +165,20 @@ def get_device_details(device_id):
 @app.route("/api/simulate-maintenance", methods=["POST"])
 def simulate_maintenance():
     try:
-        payload = request.get_json() or {}
+        payload = request.get_json(silent=True)
+        if not isinstance(payload, dict):
+            payload = {}
+
         action = payload.get("action", "replace_battery")
         current_ml = payload.get("ml_input")
-        device_id = payload.get("device_id")
 
-        if not current_ml:
+        if not current_ml or not isinstance(current_ml, dict):
             telemetry = collector.collect_all()
             ml_input = agent.process_telemetry(telemetry)
         else:
-            ml_input = MLInputSchema(**current_ml)
+            valid_fields = MLInputSchema.__dataclass_fields__.keys()
+            filtered_ml = {k: v for k, v in current_ml.items() if k in valid_fields}
+            ml_input = MLInputSchema(**filtered_ml)
 
         # Execute Component Maintenance Action
         if action == "replace_battery":
@@ -167,6 +205,7 @@ def simulate_maintenance():
 if __name__ == "__main__":
     print("=" * 60)
     print("  APEXPULSE: Enterprise Laptop Lifecycle & Fleet Monitoring API")
-    print("  Status: Active & Listening on http://127.0.0.1:5000")
+    print(f"  Status: Active & Listening on http://0.0.0.0:{SERVER_PORT}")
     print("=" * 60)
-    app.run(host="0.0.0.0", port=5000, debug=False)
+    app.run(host="0.0.0.0", port=SERVER_PORT, debug=False)
+

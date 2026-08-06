@@ -20,13 +20,22 @@ try:
 except Exception:
     pass
 
-from backend.config import (
-    MODEL_PATH,
-    RUL_HEALTHY_THRESHOLD,
-    RUL_MONITOR_THRESHOLD,
-    RUL_PLAN_REPLACEMENT_THRESHOLD
-)
-from backend.models.telemetry_schema import MLInputSchema, PredictionResult
+try:
+    from backend.config import (
+        MODEL_PATH,
+        RUL_HEALTHY_THRESHOLD,
+        RUL_MONITOR_THRESHOLD,
+        RUL_PLAN_REPLACEMENT_THRESHOLD
+    )
+    from backend.models.telemetry_schema import MLInputSchema, PredictionResult
+except ImportError:
+    from config import (
+        MODEL_PATH,
+        RUL_HEALTHY_THRESHOLD,
+        RUL_MONITOR_THRESHOLD,
+        RUL_PLAN_REPLACEMENT_THRESHOLD
+    )
+    from models.telemetry_schema import MLInputSchema, PredictionResult
 
 
 class LifecyclePredictor:

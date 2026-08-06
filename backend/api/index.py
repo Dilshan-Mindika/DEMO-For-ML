@@ -1,7 +1,17 @@
 import os
 import sys
 
-# Ensure root workspace directory is in sys.path for Vercel Python runtime
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+# Ensure both backend folder and parent folder are in sys.path for Vercel Serverless
+API_DIR = os.path.dirname(os.path.abspath(__file__))
+BACKEND_DIR = os.path.dirname(API_DIR)
+PARENT_DIR = os.path.dirname(BACKEND_DIR)
 
-from backend.app import app
+for path in [BACKEND_DIR, PARENT_DIR]:
+    if path not in sys.path:
+        sys.path.insert(0, path)
+
+try:
+    from app import app
+except ImportError:
+    from backend.app import app
+

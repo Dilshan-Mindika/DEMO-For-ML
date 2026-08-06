@@ -34,8 +34,14 @@ IF NOT EXIST "%TARGET_DIR%" (
 copy /Y "%~dp0client_agent.py" "%TARGET_DIR%\client_agent.py" >nul
 echo [+] Agent script installed to: %TARGET_DIR%\client_agent.py
 
-:: 4. Add to Windows Startup Registry (Runs automatically on Windows startup)
-SET "SERVER_URL=http://127.0.0.1:5000"
+:: 4. Set Server URL (Use argument %1 if provided, else environment variable or fallback)
+IF "%~1" NEQ "" (
+    SET "SERVER_URL=%~1"
+) ELSE IF "%SERVER_URL%"=="" (
+    SET "SERVER_URL=http://127.0.0.1:5000"
+)
+
+echo [+] Central Server URL set to: %SERVER_URL%
 SET "REG_CMD=pythonw.exe "%TARGET_DIR%\client_agent.py" --server "%SERVER_URL%""
 REG ADD "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "ApexPulseAgent" /t REG_SZ /d "%REG_CMD%" /f >nul
 

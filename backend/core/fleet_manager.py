@@ -1,19 +1,51 @@
+import os
+import json
 import time
+import threading
 from datetime import datetime
 from typing import Dict, Any, List, Optional
 
-from backend.models.telemetry_schema import TelemetryData, MLInputSchema, PredictionResult
+try:
+    from backend.config import FLEET_STORE_PATH
+    from backend.models.telemetry_schema import TelemetryData, MLInputSchema, PredictionResult
+except ImportError:
+    from config import FLEET_STORE_PATH
+    from models.telemetry_schema import TelemetryData, MLInputSchema, PredictionResult
 
 
 class FleetManager:
     """
     Object-Oriented Enterprise Fleet Manager.
     Tracks all registered enterprise laptops, telemetry history, and RUL predictions.
+    Thread-safe and persisted to JSON storage.
     """
 
-    def __init__(self):
-        # Keyed by device_id (unique combination of serial_number / hostname)
+    def __init__(self, store_path: str = FLEET_STORE_PATH):
+        self.store_path = store_path
+        self._lock = threading.Lock()
         self._devices: Dict[str, Dict[str, Any]] = {}
+        self._load_from_disk()
+
+    def _load_from_disk(self):
+        """Loads fleet records from JSON storage file if present."""
+        if os.path.exists(self.store_path):
+            try:
+                with open(self.store_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    if isinstance(data, dict):
+                        self._devices = data
+            except Exception:
+                pass
+
+    def _save_to_disk(self):
+        """Persists fleet records to JSON storage file safely."""
+        try:
+            temp_path = f"{self.store_path}.tmp"
+            with open(temp_path, "w", encoding="utf-8") as f:
+                json.dump(self._devices, f, indent=2)
+            os.replace(temp_path, self.store_path)
+        except Exception:
+            pass
 
     def register_or_update(
         self,
@@ -40,39 +72,46 @@ class FleetManager:
             "prediction": prediction.to_dict()
         }
 
-        self._devices[device_id] = device_record
+        with self._lock:
+            self._devices[device_id] = device_record
+            self._save_to_disk()
+
         return device_record
 
     def get_all_devices(self) -> List[Dict[str, Any]]:
         """Returns list of summary objects for all monitored fleet devices."""
         summary_list = []
-        for dev_id, record in self._devices.items():
-            pred = record["prediction"]
-            ml_in = pred["ml_input"]
-            summary_list.append({
-                "device_id": record["device_id"],
-                "device_name": record["device_name"],
-                "device_model": record["device_model"],
-                "manufacturer": record["manufacturer"],
-                "serial_number": record["serial_number"],
-                "last_seen": record["last_seen"],
-                "rul_months": pred["rul_months"],
-                "recommendation": pred["recommendation"],
-                "status_level": pred["status_level"],
-                "status_color": pred["status_color"],
-                "battery_health": ml_in["battery_health"],
-                "ssd_health": ml_in["ssd_health"],
-                "edhi": ml_in["edhi"]
-            })
+        with self._lock:
+            for dev_id, record in self._devices.items():
+                pred = record["prediction"]
+                ml_in = pred["ml_input"]
+                summary_list.append({
+                    "device_id": record["device_id"],
+                    "device_name": record["device_name"],
+                    "device_model": record["device_model"],
+                    "manufacturer": record["manufacturer"],
+                    "serial_number": record["serial_number"],
+                    "last_seen": record["last_seen"],
+                    "rul_months": pred["rul_months"],
+                    "recommendation": pred["recommendation"],
+                    "status_level": pred["status_level"],
+                    "status_color": pred["status_color"],
+                    "battery_health": ml_in["battery_health"],
+                    "ssd_health": ml_in["ssd_health"],
+                    "edhi": ml_in["edhi"]
+                })
         return summary_list
 
     def get_device(self, device_id: str) -> Optional[Dict[str, Any]]:
         """Retrieves full device payload by device_id."""
-        return self._devices.get(device_id)
+        with self._lock:
+            return self._devices.get(device_id)
 
     def get_fleet_summary(self) -> Dict[str, Any]:
         """Calculates fleet-wide aggregate statistics."""
-        devices = list(self._devices.values())
+        with self._lock:
+            devices = list(self._devices.values())
+        
         total = len(devices)
 
         if total == 0:
@@ -85,12 +124,12 @@ class FleetManager:
                 "avg_edhi": 0.0
             }
 
-        healthy = sum(1 for d in devices if d["prediction"]["status_level"] == "healthy")
-        monitor = sum(1 for d in devices if d["prediction"]["status_level"] == "monitor")
-        replacement = sum(1 for d in devices if d["prediction"]["status_level"] in ["plan_replacement", "replace_soon"])
+        healthy = sum(1 for d in devices if d.get("prediction", {}).get("status_level") == "healthy")
+        monitor = sum(1 for d in devices if d.get("prediction", {}).get("status_level") == "monitor")
+        replacement = sum(1 for d in devices if d.get("prediction", {}).get("status_level") in ["plan_replacement", "replace_soon"])
 
-        avg_rul = sum(d["prediction"]["rul_months"] for d in devices) / total
-        avg_edhi = sum(d["prediction"]["ml_input"]["edhi"] for d in devices) / total
+        avg_rul = sum(d.get("prediction", {}).get("rul_months", 0.0) for d in devices) / total
+        avg_edhi = sum(d.get("prediction", {}).get("ml_input", {}).get("edhi", 0.0) for d in devices) / total
 
         return {
             "total_devices": total,

@@ -1,5 +1,8 @@
 from typing import Dict, Any
-from backend.models.telemetry_schema import TelemetryData, MLInputSchema
+try:
+    from backend.models.telemetry_schema import TelemetryData, MLInputSchema
+except ImportError:
+    from models.telemetry_schema import TelemetryData, MLInputSchema
 
 
 class DeviceHealthAgent:

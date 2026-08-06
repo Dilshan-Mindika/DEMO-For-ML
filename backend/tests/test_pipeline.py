@@ -7,12 +7,20 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspa
 import unittest
 import pandas as pd
 
-from backend.core.collector import HardwareCollector
-from backend.core.agent import DeviceHealthAgent
-from backend.core.model_service import LifecyclePredictor
-from backend.core.component_manager import ComponentMaintenanceManager
-from backend.core.fleet_manager import FleetManager
-from backend.models.telemetry_schema import TelemetryData, MLInputSchema
+try:
+    from backend.core.collector import HardwareCollector
+    from backend.core.agent import DeviceHealthAgent
+    from backend.core.model_service import LifecyclePredictor
+    from backend.core.component_manager import ComponentMaintenanceManager
+    from backend.core.fleet_manager import FleetManager
+    from backend.models.telemetry_schema import TelemetryData, MLInputSchema
+except ImportError:
+    from core.collector import HardwareCollector
+    from core.agent import DeviceHealthAgent
+    from core.model_service import LifecyclePredictor
+    from core.component_manager import ComponentMaintenanceManager
+    from core.fleet_manager import FleetManager
+    from models.telemetry_schema import TelemetryData, MLInputSchema
 
 
 class TestEnterprisePipeline(unittest.TestCase):
@@ -68,6 +76,11 @@ class TestEnterprisePipeline(unittest.TestCase):
         self.assertEqual(updated.battery_health, 100.0)
         self.assertEqual(updated.battery_cycles, 0)
         self.assertEqual(updated.age, 24.0)
+
+    def test_hardware_collector_caching(self):
+        t1 = self.collector.collect_all()
+        t2 = self.collector.collect_all()
+        self.assertEqual(t1.timestamp, t2.timestamp)
 
     def test_fleet_manager_registration(self):
         telemetry = self.collector.collect_all()

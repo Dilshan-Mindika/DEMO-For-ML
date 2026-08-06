@@ -31,17 +31,24 @@ The project strictly follows industrial repository standards:
 ```
 DEMO For ML/
 ├── backend/                     # Python REST API & Core ML Intelligence
-│   ├── app.py                   # Flask REST API server (CORS enabled on port 5000)
-│   ├── config.py                # Configuration paths & RUL thresholds
+│   ├── app.py                   # Flask REST API server (CORS & PORT configuration)
+│   ├── config.py                # Environment paths, Vercel /tmp setup & RUL thresholds
+│   ├── vercel.json              # Vercel Serverless configuration with model bundle rules
+│   ├── api/                     # Vercel Serverless Entry Point
+│   │   └── index.py             # Serverless handler for Flask API routes
+│   ├── agent/                   # Client Agent & 1-Click Installer Package
+│   │   ├── client_agent.py      # Standalone Python telemetry agent with retries
+│   │   ├── Install_ApexPulse_Agent.bat # Double-clickable Windows Startup Installer
+│   │   └── build_agent_exe.py   # PyInstaller standalone EXE compiler
 │   ├── models/                  # Dataclasses & Trained ML Artifacts
 │   │   ├── telemetry_schema.py  # TelemetryData, MLInputSchema, PredictionResult
 │   │   └── xgboost_rul_model.pkl # Trained XGBoost RUL Prediction Model Pipeline
 │   ├── core/                    # OOP Intelligence Modules
-│   │   ├── collector.py         # HardwareCollector (WMI, psutil, PowerCfg, Event Logs, LHM)
+│   │   ├── collector.py         # HardwareCollector (OS-aware, 10s caching)
 │   │   ├── agent.py             # DeviceHealthAgent (Usage Profile, Performance Score, EDHI)
 │   │   ├── model_service.py     # LifecyclePredictor (XGBoost RUL Model Inference)
 │   │   ├── component_manager.py # ComponentMaintenanceManager (Battery & SSD replacements)
-│   │   └── fleet_manager.py     # FleetManager (Multi-Device Inventory Tracking)
+│   │   └── fleet_manager.py     # FleetManager (Thread-safe, JSON persisted)
 │   └── tests/                   # Automated Unit Test Suite
 │       └── test_pipeline.py     # Pipeline Unit Tests
 │
@@ -55,11 +62,7 @@ DEMO For ML/
 │   │   └── package.json         # Node dependencies
 │   └── ...
 │
-├── agent/                       # Client Agent & 1-Click Installer Package
-│   ├── client_agent.py          # Standalone Python telemetry agent
-│   ├── Install_ApexPulse_Agent.bat # Double-clickable 1-Click Windows Startup Installer
-│   └── build_agent_exe.py       # PyInstaller standalone EXE compiler
-│
+├── deploy.md                    # Vercel & Multi-Device Deployment Guide
 ├── .gitignore                   # Workspace Git Ignore Rules
 └── README.md                    # System Documentation
 ```
