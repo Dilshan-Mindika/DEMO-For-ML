@@ -26,7 +26,8 @@ import {
   Zap,
   PieChart,
   BarChart3,
-  X
+  X,
+  Menu
 } from "lucide-react";
 import { authenticateUser, UserAccount } from "./auth";
 
@@ -160,6 +161,7 @@ export default function DashboardPage() {
 
   // Navigation State: 'telemetry' | 'cpu_ram' | 'thermal_logs' | 'battery' | 'storage' | 'explainability' | 'maintenance'
   const [activeTab, setActiveTab] = useState<string>("telemetry");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   // Authentication State
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
@@ -564,7 +566,109 @@ export default function DashboardPage() {
 
   return (
     <div className={`flex min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${isDarkMode ? "dark-mode" : "light-mode"} transition-colors duration-300`}>
-      {/* Sidebar Navigation */}
+      {/* Mobile Drawer Overlay Backdrop */}
+      {mobileMenuOpen && (
+        <div
+          onClick={() => setMobileMenuOpen(false)}
+          className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm md:hidden transition-opacity"
+        />
+      )}
+
+      {/* Mobile Drawer Slide-In Panel */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-[var(--bg-sidebar)] border-r border-[var(--border-card)] p-6 flex flex-col justify-between shadow-2xl transition-transform duration-300 md:hidden ${
+          mobileMenuOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div>
+          <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
+                <Cpu className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="font-bold text-base leading-tight font-outfit text-[var(--text-heading)]">ApexPulse</h2>
+                <span className="text-[10px] text-blue-500 uppercase tracking-wider font-semibold block">
+                  Laptop Monitor
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setMobileMenuOpen(false)}
+              className="p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-lg"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          <nav className="space-y-1">
+            {[
+              { id: "telemetry", label: "Laptop Overview & Life", icon: <Activity className="w-4 h-4" /> },
+              { id: "cpu_ram", label: "Processor & Memory Speed", icon: <Cpu className="w-4 h-4" /> },
+              { id: "thermal_logs", label: "Temperature & Crashes", icon: <Thermometer className="w-4 h-4" /> },
+              { id: "battery", label: "Battery Life & Power", icon: <Battery className="w-4 h-4" /> },
+              { id: "storage", label: "Storage & Hard Drive", icon: <HardDrive className="w-4 h-4" /> },
+              { id: "explainability", label: "What Affects Laptop Life", icon: <Sliders className="w-4 h-4" /> },
+              { id: "maintenance", label: "Fix & Upgrade Guide", icon: <Wrench className="w-4 h-4" /> },
+            ].map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => {
+                  setActiveTab(tab.id);
+                  setMobileMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                  activeTab === tab.id
+                    ? "bg-blue-600 text-white shadow-lg shadow-blue-600/30"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
+                }`}
+              >
+                {tab.icon}
+                {tab.label}
+              </button>
+            ))}
+          </nav>
+        </div>
+
+        <div className="pt-6 border-t border-[var(--border-card)] space-y-4">
+          <div className="flex items-center justify-between bg-[var(--bg-input)] p-2.5 rounded-xl border border-[var(--border-input)]">
+            <span className="text-xs font-semibold text-[var(--text-secondary)] flex items-center gap-2">
+              {isDarkMode ? <Moon className="w-3.5 h-3.5 text-indigo-400" /> : <Sun className="w-3.5 h-3.5 text-amber-500" />}
+              {isDarkMode ? "Dark Mode" : "Light Mode"}
+            </span>
+            <button
+              onClick={toggleTheme}
+              aria-label="Toggle Theme"
+              className={`w-10 h-5.5 rounded-full p-0.5 transition-colors relative flex items-center border ${
+                isDarkMode ? "bg-slate-700 border-slate-600" : "bg-slate-200 border-slate-300"
+              }`}
+            >
+              <div
+                className={`w-4.5 h-4.5 rounded-full shadow-sm transition-transform duration-200 ${
+                  isDarkMode ? "bg-blue-500 translate-x-4.5" : "bg-slate-500 translate-x-0"
+                }`}
+              />
+            </button>
+          </div>
+
+          <div className="bg-[var(--bg-input)] border border-[var(--border-input)] p-3 rounded-xl flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <div className={`w-8 h-8 rounded-full ${currentUser.avatarColor} flex items-center justify-center font-bold text-xs text-white`}>
+                {currentUser.name.charAt(0)}
+              </div>
+              <div className="overflow-hidden">
+                <strong className="block text-xs font-semibold truncate text-[var(--text-heading)]">{currentUser.name}</strong>
+                <small className="text-[10px] text-[var(--text-secondary)] block truncate">{currentUser.role}</small>
+              </div>
+            </div>
+            <button onClick={handleLogout} title="Logout" className="text-[var(--text-muted)] hover:text-rose-500 p-1.5 rounded-lg">
+              <LogOut className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </aside>
+
+      {/* Desktop Sidebar Navigation */}
       <aside className="w-64 bg-[var(--bg-sidebar)] border-r border-[var(--border-card)] p-6 flex flex-col justify-between hidden md:flex transition-colors duration-300">
         <div>
           <div className="flex items-center gap-3 mb-8">
@@ -715,7 +819,34 @@ export default function DashboardPage() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-6 md:p-10 overflow-y-auto bg-[var(--bg-primary)] transition-colors duration-300">
+      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-w-[1600px] mx-auto w-full bg-[var(--bg-primary)] transition-colors duration-300">
+        {/* Mobile Top Header */}
+        <div className="flex items-center justify-between mb-4 md:hidden pb-4 border-b border-[var(--border-card)]">
+          <button
+            onClick={() => setMobileMenuOpen(true)}
+            className="p-2.5 bg-[var(--bg-input)] border border-[var(--border-input)] rounded-xl text-[var(--text-heading)] flex items-center gap-2 text-xs font-bold shadow-sm active:scale-95 transition-transform"
+          >
+            <Menu className="w-5 h-5 text-blue-500" />
+            <span>Menu</span>
+          </button>
+
+          <div className="flex items-center gap-2">
+            <a
+              href="/ApexPulseAgent.exe"
+              download="ApexPulseAgent.exe"
+              className="bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 font-semibold px-3 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-sm"
+            >
+              <Download className="w-3.5 h-3.5 text-emerald-400" />
+              Agent (.exe)
+            </a>
+            <button
+              onClick={toggleTheme}
+              className="p-2 bg-[var(--bg-input)] border border-[var(--border-input)] rounded-xl text-[var(--text-secondary)]"
+            >
+              {isDarkMode ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-indigo-400" />}
+            </button>
+          </div>
+        </div>
         {/* Header Bar */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
