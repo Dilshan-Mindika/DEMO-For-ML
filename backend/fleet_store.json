@@ -7,7 +7,7 @@
     "os_name": "Windows",
     "os_version": "10.0.26200",
     "serial_number": "FJQ9KR3",
-    "last_seen": "2026-08-06T18:59:18.052249",
+    "last_seen": "2026-08-06T19:03:24.255053",
     "telemetry": {
       "device_name": "DESKTOP-F5B57DN",
       "device_model": "XPS 9315",
@@ -15,10 +15,10 @@
       "os_version": "10.0.26200",
       "manufacturer": "Dell Inc.",
       "serial_number": "FJQ9KR3",
-      "cpu_usage": 0.0,
-      "ram_usage": 67.5,
+      "cpu_usage": 13.2,
+      "ram_usage": 68.1,
       "disk_usage": 54.5,
-      "battery_percent": 95,
+      "battery_percent": 93,
       "power_plugged": false,
       "design_capacity_mwh": 50012,
       "full_charge_capacity_mwh": 30919,
@@ -34,12 +34,12 @@
         }
       ],
       "ssd_health_percent": 100.0,
-      "uptime_hours": 83.32,
+      "uptime_hours": 83.39,
       "shutdowns_30d": 0,
-      "timestamp": "2026-08-06T18:59:17.838897"
+      "timestamp": "2026-08-06T19:03:24.230623"
     },
     "prediction": {
-      "rul_months": 21.54,
+      "rul_months": 20.51,
       "recommendation": "Plan Replacement",
       "status_level": "plan_replacement",
       "status_color": "#F59E0B",
@@ -52,11 +52,11 @@
         "battery_health": 61.82,
         "ssd_health": 100.0,
         "temperature": 45.0,
-        "performance_score": 65.58,
+        "performance_score": 67.44,
         "shutdown_count": 0,
-        "edhi": 85.29
+        "edhi": 85.57
       },
-      "timestamp": "2026-08-06T18:59:18.052202"
+      "timestamp": "2026-08-06T19:03:24.255027"
     }
   }
 }

@@ -38,10 +38,56 @@ except ImportError:
     from models.telemetry_schema import MLInputSchema, PredictionResult
 
 
+import json
+
+class JSONTreePredictor:
+    """
+    Pure Python & NumPy Decision Tree Ensemble Evaluator.
+    Loads models/model.json natively without pickle or binary dependencies.
+    """
+    def __init__(self, model_dict: Dict[str, Any]):
+        self.init_value = float(model_dict['init_value'])
+        self.learning_rate = float(model_dict['learning_rate'])
+        self.cat_categories = model_dict['cat_categories']
+        self.num_features = model_dict['num_features']
+        self.trees = model_dict['trees']
+
+    def predict(self, ml_input: MLInputSchema) -> float:
+        data_dict = ml_input.to_dict()
+        feature_vector = []
+        for col_name in ['device_model', 'usage_profile']:
+            val = str(data_dict.get(col_name, ''))
+            cats = self.cat_categories.get(col_name, [])
+            for cat in cats:
+                feature_vector.append(1.0 if val == cat else 0.0)
+
+        for col_name in self.num_features:
+            feature_vector.append(float(data_dict.get(col_name, 0.0)))
+
+        raw_pred = self.init_value
+        for tree in self.trees:
+            left = tree['children_left']
+            right = tree['children_right']
+            feat = tree['feature']
+            thresh = tree['threshold']
+            val = tree['value']
+
+            node = 0
+            while left[node] != -1:
+                f_idx = feat[node]
+                if feature_vector[f_idx] <= thresh[node]:
+                    node = left[node]
+                else:
+                    node = right[node]
+            raw_pred += self.learning_rate * val[node]
+
+        return raw_pred
+
+
 class LifecyclePredictor:
     """
     Object-Oriented Lifecycle Predictor Service.
-    Loads trained xgboost_rul_model.pkl and executes inference with fail-safe heuristic fallback.
+    Supports pure JSON Tree Model (models/model.json) and pkl fallback with fail-safe heuristic prediction.
     """
 
     def __init__(self, model_path: str = MODEL_PATH):
@@ -69,12 +115,20 @@ class LifecyclePredictor:
             return
 
         try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                self.model = joblib.load(target_path)
+            if target_path.endswith(".json"):
+                with open(target_path, "r", encoding="utf-8") as f:
+                    model_dict = json.load(f)
+                self.model = JSONTreePredictor(model_dict)
                 self.model_path = target_path
                 self.load_error = None
-                print(f"[+] Successfully loaded ML RUL predictor model from {target_path}")
+                print(f"[+] Successfully loaded pure JSON RUL predictor model from {target_path}")
+            else:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    self.model = joblib.load(target_path)
+                    self.model_path = target_path
+                    self.load_error = None
+                    print(f"[+] Successfully loaded PKL RUL predictor model from {target_path}")
         except Exception as e:
             self.load_error = str(e)
             print(f"[!] Warning: Failed to load model from {target_path}: {e}. Fallback heuristic active.")
@@ -104,10 +158,13 @@ class LifecyclePredictor:
 
         if self.model is not None:
             try:
-                df = self.prepare_dataframe(ml_input)
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    raw_pred = self.model.predict(df)[0]
+                if isinstance(self.model, JSONTreePredictor):
+                    raw_pred = self.model.predict(ml_input)
+                else:
+                    df = self.prepare_dataframe(ml_input)
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        raw_pred = self.model.predict(df)[0]
                 rul_months = round(float(raw_pred), 2)
             except Exception as e:
                 print(f"[!] Warning: Model prediction failed ({e}), using heuristic RUL fallback.")
