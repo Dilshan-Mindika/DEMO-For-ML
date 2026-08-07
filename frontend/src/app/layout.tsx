@@ -15,6 +15,11 @@ const outfit = Outfit({
 export const metadata: Metadata = {
   title: "ApexPulse - Enterprise Laptop Lifecycle & RUL Prediction",
   description: "Real-time hardware telemetry collector and XGBoost Remaining Useful Life (RUL) predictive maintenance dashboard.",
+  icons: {
+    icon: "/icon.png",
+    shortcut: "/favicon.ico",
+    apple: "/icon.png",
+  },
 };
 
 export default function RootLayout({

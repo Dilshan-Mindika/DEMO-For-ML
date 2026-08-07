@@ -447,8 +447,8 @@ export default function DashboardPage() {
 
         <div className="w-full max-w-md glass-card p-8 relative z-10">
           <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/30 mx-auto mb-4">
-              <Flame className="w-8 h-8 text-amber-400" />
+            <div className="w-20 h-20 bg-gradient-to-br from-blue-600/30 to-indigo-600/30 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/40 mx-auto mb-4 p-1.5 border border-blue-400/50 backdrop-blur-md">
+              <img src="/icon.png" alt="ApexPulse Official Logo" className="w-full h-full object-contain rounded-xl drop-shadow-lg" />
             </div>
             <h1 className="text-2xl font-bold font-outfit text-[var(--text-heading)]">ApexPulse Enterprise</h1>
             <p className="text-xs text-[var(--text-secondary)] mt-1">Smart Laptop Life & Health Monitoring Portal (Firebase Auth)</p>
@@ -662,8 +662,8 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <Flame className="w-5 h-5 text-amber-400" />
+              <div className="w-11 h-11 bg-gradient-to-br from-blue-600/30 to-indigo-600/30 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 overflow-hidden p-1 border border-blue-400/40">
+                <img src="/icon.png" alt="ApexPulse Logo" className="w-full h-full object-contain rounded-lg" />
               </div>
               <div>
                 <h2 className="font-bold text-base leading-tight font-outfit text-[var(--text-heading)]">ApexPulse</h2>
@@ -752,8 +752,8 @@ export default function DashboardPage() {
       <aside className="w-64 bg-[var(--bg-sidebar)] border-r border-[var(--border-card)] p-6 flex flex-col justify-between hidden md:flex transition-colors duration-300">
         <div>
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <Flame className="w-6 h-6 text-amber-400" />
+            <div className="w-12 h-12 bg-gradient-to-br from-blue-600/30 to-indigo-600/30 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 overflow-hidden p-1 border border-blue-400/40">
+              <img src="/icon.png" alt="ApexPulse Logo" className="w-full h-full object-contain rounded-lg" />
             </div>
             <div>
               <h2 className="font-bold text-lg leading-tight font-outfit text-[var(--text-heading)]">ApexPulse</h2>
