@@ -133,7 +133,7 @@
     "os_name": "Windows",
     "os_version": "10.0.26200",
     "serial_number": "BY2041A90301323",
-    "last_seen": "2026-08-08T02:37:37.478499",
+    "last_seen": "2026-08-08T02:43:18.340057",
     "telemetry": {
       "device_name": "DESKTOP-K6S3QF9",
       "device_model": "Blade 15 Base Model (Early 2020) - RZ09-0328",
@@ -141,9 +141,9 @@
       "os_version": "10.0.26200",
       "manufacturer": "Razer",
       "serial_number": "BY2041A90301323",
-      "cpu_usage": 53.8,
-      "ram_usage": 58.5,
-      "disk_usage": 59.0,
+      "cpu_usage": 47.5,
+      "ram_usage": 55.0,
+      "disk_usage": 59.1,
       "battery_percent": 99,
       "power_plugged": true,
       "design_capacity_mwh": null,
@@ -151,8 +151,8 @@
       "battery_health": 100.0,
       "battery_wear": 0.0,
       "battery_cycles": 150,
-      "temperature_current": 56.8,
-      "temperature_avg": 54.8,
+      "temperature_current": 54.6,
+      "temperature_avg": 52.6,
       "disk_health_status": [
         {
           "FriendlyName": "PhysicalDisk0",
@@ -191,12 +191,12 @@
         }
       ],
       "cpu_details": null,
-      "uptime_hours": 68.88,
+      "uptime_hours": 68.97,
       "shutdowns_30d": 0,
-      "timestamp": "2026-08-08T02:37:37.478068"
+      "timestamp": "2026-08-08T02:43:15.983691"
     },
     "prediction": {
-      "rul_months": 20.39,
+      "rul_months": 20.41,
       "recommendation": "Plan Replacement",
       "status_level": "plan_replacement",
       "status_color": "#F59E0B",
@@ -208,12 +208,12 @@
         "battery_cycles": 150,
         "battery_health": 100.0,
         "ssd_health": 100.0,
-        "temperature": 54.8,
-        "performance_score": 57.46,
+        "temperature": 52.6,
+        "performance_score": 60.38,
         "shutdown_count": 0,
-        "edhi": 91.31
+        "edhi": 92.81
       },
-      "timestamp": "2026-08-08T02:37:37.478489"
+      "timestamp": "2026-08-08T02:43:18.340043"
     }
   }
 }
