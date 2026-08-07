@@ -21,31 +21,47 @@ class FleetManager:
     """
 
     def __init__(self, store_path: str = FLEET_STORE_PATH):
+        import tempfile
         self.store_path = store_path
+        self.temp_store_path = os.path.join(tempfile.gettempdir(), "fleet_store.json")
         self._lock = threading.Lock()
         self._devices: Dict[str, Dict[str, Any]] = {}
         self._load_from_disk()
 
     def _load_from_disk(self):
-        """Loads fleet records from JSON storage file if present."""
-        if os.path.exists(self.store_path):
-            try:
-                with open(self.store_path, "r", encoding="utf-8") as f:
-                    data = json.load(f)
-                    if isinstance(data, dict):
-                        self._devices = data
-            except Exception:
-                pass
+        """Loads fleet records from JSON storage files if present, merging writable and seed stores."""
+        candidates = [
+            self.temp_store_path,
+            self.store_path,
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "fleet_store.json"),
+            "/var/task/backend/fleet_store.json",
+            "/var/task/fleet_store.json",
+        ]
+        merged: Dict[str, Dict[str, Any]] = {}
+        for path in reversed(candidates):
+            if path and os.path.exists(path):
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        data = json.load(f)
+                        if isinstance(data, dict):
+                            merged.update(data)
+                except Exception:
+                    pass
+        self._devices = merged
 
     def _save_to_disk(self):
-        """Persists fleet records to JSON storage file safely."""
-        try:
-            temp_path = f"{self.store_path}.tmp"
-            with open(temp_path, "w", encoding="utf-8") as f:
-                json.dump(self._devices, f, indent=2)
-            os.replace(temp_path, self.store_path)
-        except Exception:
-            pass
+        """Persists fleet records to JSON storage files safely."""
+        target_paths = [self.temp_store_path, self.store_path]
+        for path in target_paths:
+            if not path:
+                continue
+            try:
+                temp_file = f"{path}.tmp"
+                with open(temp_file, "w", encoding="utf-8") as f:
+                    json.dump(self._devices, f, indent=2)
+                os.replace(temp_file, path)
+            except Exception:
+                pass
 
     def register_or_update(
         self,

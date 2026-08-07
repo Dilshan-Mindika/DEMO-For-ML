@@ -343,9 +343,22 @@ def main():
     parser = argparse.ArgumentParser(description="ApexPulse Enterprise Client Telemetry Agent")
     parser.add_argument("--server", default="https://apex-ml-back.vercel.app", help="Central ApexPulse Server URL (e.g. https://apex-ml-back.vercel.app)")
     parser.add_argument("--api-key", default="", help="Optional authentication API key for ApexPulse server")
+    parser.add_argument("--interval", type=int, default=30, help="Telemetry reporting interval in seconds (default: 30)")
+    parser.add_argument("--once", action="store_true", help="Send single telemetry snapshot and exit")
     args = parser.parse_args()
 
-    send_telemetry(args.server, api_key=args.api_key)
+    print(f"[+] ApexPulse Agent active. Server: {args.server} (Interval: {args.interval}s)")
+
+    if args.once:
+        send_telemetry(args.server, api_key=args.api_key)
+        return
+
+    while True:
+        try:
+            send_telemetry(args.server, api_key=args.api_key)
+        except Exception as err:
+            print(f"[!] Telemetry cycle error: {err}")
+        time.sleep(max(5, args.interval))
 
 
 if __name__ == "__main__":
