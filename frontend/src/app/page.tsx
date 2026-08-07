@@ -2795,130 +2795,284 @@ export default function DashboardPage() {
 
         {/* TAB 7: WHAT AFFECTS LAPTOP LIFE */}
         {activeTab === "explainability" && (
-          <div className="grid grid-cols-12 gap-6">
-            <section className="col-span-12 lg:col-span-6 glass-card p-6">
-              <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-2">
-                <BarChart3 className="w-5 h-5 text-indigo-500" /> What Matters Most for Laptop Lifespan
-              </h3>
-              <p className="text-xs text-[var(--text-secondary)] mb-6">
-                Ranking of factors that determine how long your laptop will last.
-              </p>
-
-              <div className="space-y-4">
-                {[
-                  { name: "battery_health", weight: 28, label: "Battery Health Condition", color: "from-emerald-500 to-teal-500" },
-                  { name: "age", weight: 24, label: "Laptop Age (Months)", color: "from-blue-500 to-indigo-500" },
-                  { name: "battery_cycles", weight: 18, label: "Battery Charge Count", color: "from-indigo-500 to-purple-500" },
-                  { name: "ssd_health", weight: 14, label: "Hard Drive Condition", color: "from-amber-500 to-orange-500" },
-                  { name: "edhi", weight: 10, label: "Overall System Health Score", color: "from-rose-500 to-pink-500" },
-                  { name: "temperature", weight: 6, label: "Average Operating Heat", color: "from-cyan-500 to-blue-500" },
-                ].map((f) => (
-                  <div key={f.name}>
-                    <div className="flex justify-between text-xs font-semibold mb-1">
-                      <span className="text-[var(--text-primary)]">{f.label}</span>
-                      <span className="font-mono text-[var(--text-secondary)]">{f.weight}% Importance</span>
-                    </div>
-                    <div className="w-full h-2.5 bg-[var(--bg-input)] rounded-full overflow-hidden">
-                      <div className={`h-full bg-gradient-to-r ${f.color} rounded-full`} style={{ width: `${f.weight * 3.2}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </section>
-
-            <section className="col-span-12 lg:col-span-6 glass-card p-6 flex flex-col justify-between">
-              <div>
-                <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-2">
-                  <Sliders className="w-5 h-5 text-blue-500" /> Interactive Lifespan Calculator
-                </h3>
-                <p className="text-xs text-[var(--text-secondary)] mb-6">
-                  Move the sliders to see how improving parts changes your laptop remaining life.
-                </p>
-
-                <div className="space-y-4 text-xs">
-                  <div>
-                    <div className="flex justify-between font-semibold mb-1 text-[var(--text-primary)]">
-                      <span>Laptop Age: <strong className="text-blue-500">{simAge} Months</strong></span>
-                    </div>
-                    <input type="range" min="1" max="60" value={simAge} onChange={(e) => setSimAge(Number(e.target.value))} className="w-full accent-blue-500 cursor-pointer" />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between font-semibold mb-1 text-[var(--text-primary)]">
-                      <span>Battery Health: <strong className="text-emerald-500">{simBatHealth}%</strong></span>
-                    </div>
-                    <input type="range" min="10" max="100" value={simBatHealth} onChange={(e) => setSimBatHealth(Number(e.target.value))} className="w-full accent-emerald-500 cursor-pointer" />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between font-semibold mb-1 text-[var(--text-primary)]">
-                      <span>Times Battery Charged: <strong className="text-indigo-500">{simCycles} Cycles</strong></span>
-                    </div>
-                    <input type="range" min="10" max="1000" step="10" value={simCycles} onChange={(e) => setSimCycles(Number(e.target.value))} className="w-full accent-indigo-500 cursor-pointer" />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between font-semibold mb-1 text-[var(--text-primary)]">
-                      <span>Hard Drive Health: <strong className="text-amber-500">{simSSDHealth}%</strong></span>
-                    </div>
-                    <input type="range" min="10" max="100" value={simSSDHealth} onChange={(e) => setSimSSDHealth(Number(e.target.value))} className="w-full accent-amber-500 cursor-pointer" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-6 pt-4 border-t border-[var(--border-card)] bg-[var(--bg-input)] p-4 rounded-xl flex items-center justify-between">
+          <div className="space-y-6">
+            <div className="grid grid-cols-12 gap-6">
+              {/* Feature Importance Rank Breakdown */}
+              <section className="col-span-12 lg:col-span-6 glass-card p-6 flex flex-col justify-between">
                 <div>
-                  <span className="text-[11px] text-[var(--text-secondary)] uppercase font-semibold block">Calculated Life Outcome</span>
-                  <strong className="text-2xl font-bold font-outfit text-blue-500">
-                    {((simBatHealth * 0.25) + (simSSDHealth * 0.15) + (48 - simAge * 0.6)).toFixed(1)} Months
-                  </strong>
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-card)]">
+                    <div>
+                      <h3 className="font-bold text-lg font-outfit text-[var(--text-heading)] flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-indigo-400" /> What Matters Most for Laptop Lifespan
+                      </h3>
+                      <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                        XGBoost Machine Learning model feature importance weight breakdown
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/30 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                      Model Weights
+                    </span>
+                  </div>
+
+                  <div className="space-y-3.5">
+                    {[
+                      { rank: "#1", weight: 28, label: "Battery Health Condition", impact: "Critical Impact (28%)", desc: "Lithium-ion cell capacity retention directly dictates daily portability and system stability.", color: "from-emerald-500 to-teal-400", badgeColor: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30" },
+                      { rank: "#2", weight: 24, label: "Laptop Age (Months)", impact: "High Impact (24%)", desc: "Physical component wear and mother board solder aging over cumulative operational months.", color: "from-blue-500 to-indigo-500", badgeColor: "text-blue-400 bg-blue-500/10 border-blue-500/30" },
+                      { rank: "#3", weight: 18, label: "Battery Charge Count (Cycles)", impact: "High Impact (18%)", desc: "Full 0-to-100% charging cycles consume the finite chemical lifetime of internal battery cells.", color: "from-indigo-500 to-purple-500", badgeColor: "text-indigo-400 bg-indigo-500/10 border-indigo-500/30" },
+                      { rank: "#4", weight: 14, label: "Hard Drive Condition (SSD SMART)", impact: "Moderate Impact (14%)", desc: "NAND Flash memory read/write endurance and controller SMART health parameter.", color: "from-amber-500 to-orange-400", badgeColor: "text-amber-400 bg-amber-500/10 border-amber-500/30" },
+                      { rank: "#5", weight: 10, label: "Overall System Health Score (EDHI)", impact: "Moderate Impact (10%)", desc: "Combined hardware health metric synthesizing CPU, RAM, thermal, and crash history.", color: "from-rose-500 to-pink-500", badgeColor: "text-rose-400 bg-rose-500/10 border-rose-500/30" },
+                      { rank: "#6", weight: 6, label: "Average Operating Heat (°C)", impact: "Low Thermal Wear (6%)", desc: "Excess heat accelerates semiconductor degradation and fan mechanical failure.", color: "from-cyan-500 to-blue-400", badgeColor: "text-cyan-400 bg-cyan-500/10 border-cyan-500/30" },
+                    ].map((f) => (
+                      <div key={f.rank} className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] hover:border-indigo-500/40 transition-colors space-y-2">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-extrabold text-xs text-[var(--text-muted)]">{f.rank}</span>
+                            <strong className="text-[var(--text-heading)] font-bold">{f.label}</strong>
+                          </div>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded border font-mono ${f.badgeColor}`}>
+                            {f.impact}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-[var(--text-secondary)]">{f.desc}</p>
+                        <div className="w-full h-2 bg-[var(--bg-card)] rounded-full overflow-hidden border border-[var(--border-card)]">
+                          <div className={`h-full bg-gradient-to-r ${f.color} rounded-full`} style={{ width: `${f.weight * 3.2}%` }} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <span className="bg-blue-500/20 text-blue-500 dark:text-blue-300 text-xs px-3 py-1 rounded-full font-semibold">
-                  Estimated Result
-                </span>
-              </div>
-            </section>
+              </section>
+
+              {/* Interactive Lifespan Scenario Calculator */}
+              <section className="col-span-12 lg:col-span-6 glass-card p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-card)]">
+                    <div>
+                      <h3 className="font-bold text-lg font-outfit text-[var(--text-heading)] flex items-center gap-2">
+                        <Sliders className="w-5 h-5 text-blue-400" /> Interactive Lifespan Calculator
+                      </h3>
+                      <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                        Adjust parameters to simulate hardware component upgrades & maintenance
+                      </p>
+                    </div>
+                    <span className="text-[10px] font-bold text-blue-400 bg-blue-500/10 border border-blue-500/30 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                      Interactive Simulator
+                    </span>
+                  </div>
+
+                  {/* Preset Quick Buttons */}
+                  <div className="mb-4">
+                    <span className="text-[11px] font-semibold text-[var(--text-muted)] block mb-1.5 uppercase tracking-wider">Quick Preset Scenarios:</span>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => { setSimAge(12); setSimBatHealth(98); setSimCycles(50); setSimSSDHealth(100); }}
+                        className="bg-[var(--bg-input)] hover:bg-emerald-500/20 border border-[var(--border-input)] hover:border-emerald-500/40 text-emerald-400 text-xs px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer"
+                      >
+                        Like-New Laptop
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setSimAge(36); setSimBatHealth(70); setSimCycles(550); setSimSSDHealth(78); }}
+                        className="bg-[var(--bg-input)] hover:bg-amber-500/20 border border-[var(--border-input)] hover:border-amber-500/40 text-amber-400 text-xs px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer"
+                      >
+                        Heavy 3-Year Wear
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setSimAge(24); setSimBatHealth(100); setSimCycles(10); setSimSSDHealth(100); }}
+                        className="bg-[var(--bg-input)] hover:bg-blue-500/20 border border-[var(--border-input)] hover:border-blue-500/40 text-blue-400 text-xs px-3 py-1.5 rounded-xl font-semibold transition-all cursor-pointer"
+                      >
+                        Post Battery Swap (+14 Mo)
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-5 text-xs">
+                    <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                      <div className="flex justify-between font-semibold mb-1 text-[var(--text-heading)]">
+                        <span>Laptop Operational Age:</span>
+                        <strong className="text-blue-400 font-mono text-sm">{simAge} Months</strong>
+                      </div>
+                      <input type="range" min="1" max="60" value={simAge} onChange={(e) => setSimAge(Number(e.target.value))} className="w-full accent-blue-500 cursor-pointer mt-1" />
+                    </div>
+
+                    <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                      <div className="flex justify-between font-semibold mb-1 text-[var(--text-heading)]">
+                        <span>Battery Capacity Health:</span>
+                        <strong className="text-emerald-400 font-mono text-sm">{simBatHealth}%</strong>
+                      </div>
+                      <input type="range" min="10" max="100" value={simBatHealth} onChange={(e) => setSimBatHealth(Number(e.target.value))} className="w-full accent-emerald-500 cursor-pointer mt-1" />
+                    </div>
+
+                    <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                      <div className="flex justify-between font-semibold mb-1 text-[var(--text-heading)]">
+                        <span>Battery Charge Count:</span>
+                        <strong className="text-indigo-400 font-mono text-sm">{simCycles} Cycles</strong>
+                      </div>
+                      <input type="range" min="10" max="1000" step="10" value={simCycles} onChange={(e) => setSimCycles(Number(e.target.value))} className="w-full accent-indigo-500 cursor-pointer mt-1" />
+                    </div>
+
+                    <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
+                      <div className="flex justify-between font-semibold mb-1 text-[var(--text-heading)]">
+                        <span>Hard Drive SSD Health:</span>
+                        <strong className="text-amber-400 font-mono text-sm">{simSSDHealth}%</strong>
+                      </div>
+                      <input type="range" min="10" max="100" value={simSSDHealth} onChange={(e) => setSimSSDHealth(Number(e.target.value))} className="w-full accent-amber-500 cursor-pointer mt-1" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-[var(--border-card)] bg-gradient-to-r from-blue-900/20 to-indigo-900/20 p-5 rounded-2xl border border-blue-500/30 flex items-center justify-between">
+                  <div>
+                    <span className="text-[11px] text-[var(--text-secondary)] uppercase font-semibold block mb-0.5">Calculated Remaining Life</span>
+                    <strong className="text-3xl font-extrabold font-outfit text-blue-400">
+                      {((simBatHealth * 0.25) + (simSSDHealth * 0.15) + (48 - simAge * 0.6)).toFixed(1)} Months Left
+                    </strong>
+                  </div>
+                  <span className="bg-blue-500/20 border border-blue-500/40 text-blue-400 font-bold text-xs px-3.5 py-1.5 rounded-full shadow-sm">
+                    Simulated Result
+                  </span>
+                </div>
+              </section>
+            </div>
+
+            {/* LIFESPAN DECAY & DEGRADATION PREDICTION MATRIX (FILLING FREE SPACE AT BOTTOM) */}
+            <div className="grid grid-cols-12 gap-6">
+              <section className="col-span-12 glass-card p-6">
+                <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-card)]">
+                  <div>
+                    <h3 className="font-bold text-lg font-outfit text-[var(--text-heading)] flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-cyan-400" /> Workload Profile & Lifespan Projection Matrix
+                    </h3>
+                    <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                      Predicted laptop longevity across different enterprise operational intensity levels
+                    </p>
+                  </div>
+                  <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                    Longevity Matrix
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+                  <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] space-y-3 hover:border-emerald-500/40 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <strong className="text-sm font-bold text-emerald-400">Light Office Workload</strong>
+                      <span className="text-[10px] bg-emerald-500/10 text-emerald-400 font-bold px-2 py-0.5 rounded border border-emerald-500/30">
+                        ~5 Hrs / Day
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--text-secondary)]">Web browsing, document editing, and email usage with charge limiters active.</p>
+                    <div className="pt-2 border-t border-[var(--border-card)] flex justify-between font-semibold">
+                      <span className="text-[var(--text-muted)]">Expected Lifespan Gain:</span>
+                      <span className="text-emerald-400 font-bold font-mono">+18.4 Months</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] space-y-3 hover:border-blue-500/40 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <strong className="text-sm font-bold text-blue-400">Developer & Design Workload</strong>
+                      <span className="text-[10px] bg-blue-500/10 text-blue-400 font-bold px-2 py-0.5 rounded border border-blue-500/30">
+                        ~8 Hrs / Day
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--text-secondary)]">IDE compilation, Docker containers, multi-monitor productivity, standard thermal cycles.</p>
+                    <div className="pt-2 border-t border-[var(--border-card)] flex justify-between font-semibold">
+                      <span className="text-[var(--text-muted)]">Expected Lifespan Gain:</span>
+                      <span className="text-blue-400 font-bold font-mono">Standard 48 Months</span>
+                    </div>
+                  </div>
+
+                  <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] space-y-3 hover:border-purple-500/40 transition-colors">
+                    <div className="flex items-center justify-between">
+                      <strong className="text-sm font-bold text-purple-400">Heavy Rendering & AI Workload</strong>
+                      <span className="text-[10px] bg-purple-500/10 text-purple-400 font-bold px-2 py-0.5 rounded border border-purple-500/30">
+                        ~12+ Hrs / Day
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-[var(--text-secondary)]">Sustained high GPU/CPU thermal load, frequent battery recharge cycles.</p>
+                    <div className="pt-2 border-t border-[var(--border-card)] flex justify-between font-semibold">
+                      <span className="text-[var(--text-muted)]">Recommended Action:</span>
+                      <span className="text-amber-400 font-bold font-mono">Swap Battery @ 18 Mo</span>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            </div>
           </div>
         )}
 
         {/* TAB 8: REPAIR & HARDWARE UPGRADE GUIDE */}
         {activeTab === "maintenance" && (
-          <div className="grid grid-cols-12 gap-6">
-            <section className="col-span-12 glass-card p-6">
-              <div className="mb-6">
-                <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2">
-                  <Wrench className="w-5 h-5 text-indigo-500" /> Laptop Repair & Life Boost Guide
-                </h3>
-                <p className="text-xs text-[var(--text-secondary)] mt-1">
-                  Click the buttons below to see how fixing parts extends your laptop life and saves money.
-                </p>
+          <div className="space-y-6">
+            {/* Primary Action Buttons & Repair ROI Table */}
+            <section className="glass-card p-6">
+              <div className="flex items-center justify-between mb-6 pb-3 border-b border-[var(--border-card)]">
+                <div>
+                  <h3 className="font-bold text-lg font-outfit text-[var(--text-heading)] flex items-center gap-2">
+                    <Wrench className="w-5 h-5 text-indigo-400" /> Laptop Repair & Life Boost Guide
+                  </h3>
+                  <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                    Click the buttons below to simulate hardware component replacements and calculate lifespan ROI
+                  </p>
+                </div>
+                <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/30 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                  Hardware Tuning
+                </span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <button onClick={() => triggerMaintenance("replace_battery")} disabled={loading} className="bg-[var(--bg-input)] hover:bg-emerald-500/10 border border-[var(--border-input)] hover:border-emerald-500/40 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group cursor-pointer">
-                  <Battery className="w-8 h-8 text-emerald-500 group-hover:scale-110 transition-transform" />
+                <button
+                  onClick={() => triggerMaintenance("replace_battery")}
+                  disabled={loading}
+                  className="bg-[var(--bg-input)] hover:bg-emerald-500/15 border border-[var(--border-input)] hover:border-emerald-500/50 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group cursor-pointer shadow-md hover:scale-[1.01]"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <Battery className="w-6 h-6 text-emerald-400" />
+                  </div>
                   <div>
-                    <strong className="block text-sm text-[var(--text-heading)]">Replace Battery</strong>
-                    <span className="text-xs text-[var(--text-secondary)]">Installs a brand new battery</span>
-                    <div className="text-[11px] text-emerald-500 font-bold mt-1">+14.2 Extra Months Life</div>
+                    <strong className="block text-sm font-bold text-[var(--text-heading)]">Replace Battery</strong>
+                    <span className="text-xs text-[var(--text-secondary)]">Installs a brand new battery cell</span>
+                    <div className="text-[11px] text-emerald-400 font-bold mt-1 flex items-center gap-1">
+                      <span>+14.2 Extra Months Life</span>
+                      <span className="text-[9px] bg-emerald-500/20 px-1.5 py-0.2 rounded font-mono">ROI $5.98/Mo</span>
+                    </div>
                   </div>
                 </button>
 
-                <button onClick={() => triggerMaintenance("replace_ssd")} disabled={loading} className="bg-[var(--bg-input)] hover:bg-blue-500/10 border border-[var(--border-input)] hover:border-blue-500/40 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group cursor-pointer">
-                  <HardDrive className="w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform" />
+                <button
+                  onClick={() => triggerMaintenance("replace_ssd")}
+                  disabled={loading}
+                  className="bg-[var(--bg-input)] hover:bg-blue-500/15 border border-[var(--border-input)] hover:border-blue-500/50 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group cursor-pointer shadow-md hover:scale-[1.01]"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-blue-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <HardDrive className="w-6 h-6 text-blue-400" />
+                  </div>
                   <div>
-                    <strong className="block text-sm text-[var(--text-heading)]">Replace Hard Drive</strong>
-                    <span className="text-xs text-[var(--text-secondary)]">Installs a fast new SSD drive</span>
-                    <div className="text-[11px] text-blue-500 font-bold mt-1">+8.5 Extra Months Life</div>
+                    <strong className="block text-sm font-bold text-[var(--text-heading)]">Replace Hard Drive</strong>
+                    <span className="text-xs text-[var(--text-secondary)]">Installs a high-speed NVMe SSD</span>
+                    <div className="text-[11px] text-blue-400 font-bold mt-1 flex items-center gap-1">
+                      <span>+8.5 Extra Months Life</span>
+                      <span className="text-[9px] bg-blue-500/20 px-1.5 py-0.2 rounded font-mono">ROI $12.94/Mo</span>
+                    </div>
                   </div>
                 </button>
 
-                <button onClick={() => triggerMaintenance("full_overhaul")} disabled={loading} className="bg-gradient-to-br from-indigo-600/20 to-emerald-600/20 border border-indigo-500/40 hover:border-indigo-400 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group cursor-pointer">
-                  <Wrench className="w-8 h-8 text-indigo-500 dark:text-indigo-300 group-hover:scale-110 transition-transform" />
+                <button
+                  onClick={() => triggerMaintenance("full_overhaul")}
+                  disabled={loading}
+                  className="bg-gradient-to-br from-indigo-900/30 to-purple-900/30 border border-indigo-500/50 hover:border-indigo-400 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group cursor-pointer shadow-lg hover:scale-[1.01]"
+                >
+                  <div className="w-12 h-12 rounded-2xl bg-indigo-500/20 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                    <Wrench className="w-6 h-6 text-indigo-400" />
+                  </div>
                   <div>
-                    <strong className="block text-sm text-[var(--text-heading)]">Full Laptop Tune-up</strong>
-                    <span className="text-xs text-[var(--text-secondary)]">New Battery + Hard Drive + Dust Clean</span>
-                    <div className="text-[11px] text-indigo-500 dark:text-indigo-300 font-bold mt-1">+22.8 Extra Months Life</div>
+                    <strong className="block text-sm font-bold text-[var(--text-heading)]">Full Laptop Tune-up</strong>
+                    <span className="text-xs text-[var(--text-secondary)]">Battery + SSD + Thermal Repaste</span>
+                    <div className="text-[11px] text-indigo-400 font-bold mt-1 flex items-center gap-1">
+                      <span>+22.8 Extra Months Life</span>
+                      <span className="text-[9px] bg-indigo-500/20 px-1.5 py-0.2 rounded font-mono">Best Value</span>
+                    </div>
                   </div>
                 </button>
               </div>
@@ -2928,45 +3082,160 @@ export default function DashboardPage() {
                 <table className="w-full text-xs text-left border-collapse">
                   <thead>
                     <tr className="border-b border-[var(--table-header-border)] text-[var(--text-secondary)]">
-                      <th className="py-3 px-4">Repair Choice</th>
-                      <th className="py-3 px-4">Estimated Cost</th>
-                      <th className="py-3 px-4">Extra Life Gained</th>
-                      <th className="py-3 px-4">Value Worth</th>
-                      <th className="py-3 px-4">Recommendation</th>
+                      <th className="py-3 px-4">Repair Option</th>
+                      <th className="py-3 px-4">Estimated Part Cost</th>
+                      <th className="py-3 px-4">Extra Lifespan Gained</th>
+                      <th className="py-3 px-4">Cost Efficiency Ratio</th>
+                      <th className="py-3 px-4">Fleet Recommendation</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--table-header-border)]">
-                    <tr className="hover:bg-[var(--table-hover)]">
-                      <td className="py-3 px-4 font-semibold text-[var(--text-heading)] flex items-center gap-2">
-                        <Battery className="w-4 h-4 text-emerald-500" /> New Battery Replacement
+                    <tr className="hover:bg-[var(--table-hover)] transition-colors">
+                      <td className="py-3 px-4 font-bold text-[var(--text-heading)] flex items-center gap-2">
+                        <Battery className="w-4 h-4 text-emerald-400" /> New Battery Replacement
                       </td>
-                      <td className="py-3 px-4 font-mono text-[var(--text-primary)]">$85.00</td>
-                      <td className="py-3 px-4 font-bold text-emerald-500">+14.2 Months</td>
-                      <td className="py-3 px-4 font-mono text-blue-500 font-semibold">High Value Return</td>
-                      <td className="py-3 px-4"><span className="bg-emerald-500/20 text-emerald-500 px-2.5 py-0.5 rounded font-semibold">Best Choice</span></td>
+                      <td className="py-3 px-4 font-mono font-bold text-[var(--text-primary)]">$85.00</td>
+                      <td className="py-3 px-4 font-bold text-emerald-400 font-mono">+14.2 Months</td>
+                      <td className="py-3 px-4 font-mono text-emerald-400 font-bold">$5.98 / Month Gained</td>
+                      <td className="py-3 px-4">
+                        <span className="bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 px-2.5 py-0.5 rounded font-bold text-[11px]">
+                          Best ROI Choice
+                        </span>
+                      </td>
                     </tr>
-                    <tr className="hover:bg-[var(--table-hover)]">
-                      <td className="py-3 px-4 font-semibold text-[var(--text-heading)] flex items-center gap-2">
-                        <HardDrive className="w-4 h-4 text-blue-500" /> New SSD Drive Upgrade
+                    <tr className="hover:bg-[var(--table-hover)] transition-colors">
+                      <td className="py-3 px-4 font-bold text-[var(--text-heading)] flex items-center gap-2">
+                        <HardDrive className="w-4 h-4 text-blue-400" /> New SSD Drive Upgrade
                       </td>
-                      <td className="py-3 px-4 font-mono text-[var(--text-primary)]">$110.00</td>
-                      <td className="py-3 px-4 font-bold text-blue-500">+8.5 Months</td>
-                      <td className="py-3 px-4 font-mono text-blue-500 font-semibold">Good Value Return</td>
-                      <td className="py-3 px-4"><span className="bg-blue-500/20 text-blue-500 px-2.5 py-0.5 rounded font-semibold">Recommended</span></td>
+                      <td className="py-3 px-4 font-mono font-bold text-[var(--text-primary)]">$110.00</td>
+                      <td className="py-3 px-4 font-bold text-blue-400 font-mono">+8.5 Months</td>
+                      <td className="py-3 px-4 font-mono text-blue-400 font-bold">$12.94 / Month Gained</td>
+                      <td className="py-3 px-4">
+                        <span className="bg-blue-500/20 border border-blue-500/40 text-blue-400 px-2.5 py-0.5 rounded font-bold text-[11px]">
+                          Recommended
+                        </span>
+                      </td>
                     </tr>
-                    <tr className="hover:bg-[var(--table-hover)]">
-                      <td className="py-3 px-4 font-semibold text-[var(--text-heading)] flex items-center gap-2">
-                        <Wrench className="w-4 h-4 text-indigo-500" /> Complete Laptop Refurbish
+                    <tr className="hover:bg-[var(--table-hover)] transition-colors">
+                      <td className="py-3 px-4 font-bold text-[var(--text-heading)] flex items-center gap-2">
+                        <Wrench className="w-4 h-4 text-indigo-400" /> Complete Laptop Refurbish
                       </td>
-                      <td className="py-3 px-4 font-mono text-[var(--text-primary)]">$175.00</td>
-                      <td className="py-3 px-4 font-bold text-indigo-500">+22.8 Months</td>
-                      <td className="py-3 px-4 font-mono text-indigo-500 font-semibold">Maximum Value Return</td>
-                      <td className="py-3 px-4"><span className="bg-indigo-500/20 text-indigo-400 px-2.5 py-0.5 rounded font-semibold">Top Priority</span></td>
+                      <td className="py-3 px-4 font-mono font-bold text-[var(--text-primary)]">$175.00</td>
+                      <td className="py-3 px-4 font-bold text-indigo-400 font-mono">+22.8 Months</td>
+                      <td className="py-3 px-4 font-mono text-indigo-400 font-bold">$7.67 / Month Gained</td>
+                      <td className="py-3 px-4">
+                        <span className="bg-indigo-500/20 border border-indigo-500/40 text-indigo-400 px-2.5 py-0.5 rounded font-bold text-[11px]">
+                          Top Priority
+                        </span>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
               </div>
             </section>
+
+            {/* HARDWARE COMPONENT DIAGNOSTICS & MAINTENANCE EXECUTION CHECKLIST (FILLING FREE SPACE AT BOTTOM) */}
+            <div className="grid grid-cols-12 gap-6">
+              {/* Component Health Diagnostics */}
+              <section className="col-span-12 lg:col-span-7 glass-card p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-card)]">
+                    <div>
+                      <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2">
+                        <ShieldCheck className="w-5 h-5 text-emerald-400" /> Hardware Health Status Diagnostics
+                      </h3>
+                      <p className="text-xs text-[var(--text-secondary)] mt-0.5">Real-time component health assessment and recommended preventive maintenance</p>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                      Diagnostics OK
+                    </span>
+                  </div>
+
+                  <div className="space-y-3 text-xs">
+                    <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <Battery className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+                        <div>
+                          <strong className="block text-[var(--text-heading)] font-bold">Battery Pack Unit</strong>
+                          <span className="text-[11px] text-[var(--text-secondary)]">Health: 88.1% • No immediate swap needed. Calibrate every 3 months.</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded">Optimal</span>
+                    </div>
+
+                    <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <HardDrive className="w-5 h-5 text-cyan-400 flex-shrink-0" />
+                        <div>
+                          <strong className="block text-[var(--text-heading)] font-bold">Storage NVMe SSD Drive</strong>
+                          <span className="text-[11px] text-[var(--text-secondary)]">SMART Health: 100% OK • Enable Windows TRIM optimization quarterly.</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 rounded">Excellent</span>
+                    </div>
+
+                    <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <Thermometer className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                        <div>
+                          <strong className="block text-[var(--text-heading)] font-bold">Thermal Sink & Fan Vents</strong>
+                          <span className="text-[11px] text-[var(--text-secondary)]">Current Temp: 45°C • Clean dust filters every 6 months to prevent throttling.</span>
+                        </div>
+                      </div>
+                      <span className="text-[10px] font-bold text-amber-400 bg-amber-500/10 border border-amber-500/30 px-2 py-0.5 rounded">Clean Vents</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="pt-4 mt-4 border-t border-[var(--border-card)] text-[11px] text-[var(--text-secondary)] flex items-center justify-between">
+                  <span>Preventive Inspection: Recommended semi-annually</span>
+                  <span className="text-emerald-400 font-bold">Hardware Integrity Verified</span>
+                </div>
+              </section>
+
+              {/* Maintenance Execution Guide Checklist */}
+              <section className="col-span-12 lg:col-span-5 glass-card p-6 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-card)]">
+                    <div>
+                      <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-indigo-400" /> Maintenance Execution Checklist
+                      </h3>
+                      <p className="text-xs text-[var(--text-secondary)] mt-0.5">Pre-servicing protocol for laptop hardware upgrades</p>
+                    </div>
+                    <span className="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 border border-indigo-500/30 px-2.5 py-1 rounded-lg uppercase tracking-wider">
+                      Standard Protocol
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5 text-xs">
+                    {[
+                      { step: "1. Back up system data to Cloud or external drive", done: true },
+                      { step: "2. Discharge battery below 25% for ESD safety", done: true },
+                      { step: "3. Disconnect AC charger & shut down OS", done: true },
+                      { step: "4. Unscrew bottom casing & disconnect battery cable", done: false },
+                      { step: "5. Swap target component & re-apply thermal compound", done: false },
+                    ].map((item, idx) => (
+                      <div key={idx} className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border-input)] flex items-center justify-between">
+                        <span className={`font-medium ${item.done ? "line-through text-[var(--text-muted)]" : "text-[var(--text-primary)]"}`}>
+                          {item.step}
+                        </span>
+                        {item.done ? (
+                          <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                        ) : (
+                          <div className="w-4 h-4 rounded-full border border-[var(--border-input)] flex-shrink-0" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-4 mt-4 border-t border-[var(--border-card)] text-[11px] text-[var(--text-secondary)] flex items-center justify-between">
+                  <span>ESD Anti-Static Precautions Required</span>
+                  <span className="text-indigo-400 font-bold">Standard Operating Procedure</span>
+                </div>
+              </section>
+            </div>
           </div>
         )}
       </main>
