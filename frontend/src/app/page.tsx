@@ -527,12 +527,18 @@ export default function DashboardPage() {
   };
 
   const safeFetchApi = useCallback(async (path: string, options: RequestInit = {}) => {
-    const candidateBases = [
+    const isHttpsPage = typeof window !== "undefined" && window.location.protocol === "https:";
+
+    const rawCandidates = [
       process.env.NEXT_PUBLIC_API_URL,
+      "https://apex-ml-back.vercel.app",
       "http://127.0.0.1:5000",
       "http://localhost:5000",
-      "https://apex-ml-back.vercel.app"
     ].filter(Boolean) as string[];
+
+    const candidateBases = isHttpsPage
+      ? rawCandidates.filter((url) => url.startsWith("https://"))
+      : rawCandidates;
 
     const uniqueBases = Array.from(new Set(candidateBases));
 
