@@ -43,6 +43,23 @@ predictor = LifecyclePredictor()
 maintenance_mgr = ComponentMaintenanceManager()
 fleet_mgr = FleetManager()
 
+class VercelPathFixMiddleware:
+    """WSGI Middleware to strip Vercel serverless prefix (/api/index) from PATH_INFO."""
+    def __init__(self, app):
+        self.app = app
+
+    def __call__(self, environ, start_response):
+        path_info = environ.get("PATH_INFO", "")
+        if path_info.startswith("/api/index.py"):
+            path_info = path_info[13:] or "/"
+            environ["PATH_INFO"] = path_info
+        elif path_info.startswith("/api/index"):
+            path_info = path_info[10:] or "/"
+            environ["PATH_INFO"] = path_info
+        return self.app(environ, start_response)
+
+app.wsgi_app = VercelPathFixMiddleware(app.wsgi_app)
+
 # Auto-register local host on startup
 try:
     local_telemetry = collector.collect_all()
@@ -62,6 +79,8 @@ def verify_api_key_if_required() -> bool:
 
 
 @app.route("/", methods=["GET"])
+@app.route("/api/index", methods=["GET"])
+@app.route("/api/index.py", methods=["GET"])
 def index_root():
     return jsonify({
         "status": "online",
@@ -232,6 +251,20 @@ def simulate_maintenance():
 
     except Exception as e:
         return jsonify({"error": f"Maintenance simulation failed: {str(e)}"}), 500
+
+
+@app.errorhandler(404)
+def not_found_handler(e):
+    return jsonify({
+        "status": "online",
+        "service": "ApexPulse Enterprise Laptop Lifecycle & Fleet Monitoring API",
+        "message": "Resource endpoint active. Use /api/health or /api/predict.",
+        "endpoints": {
+            "health": "/api/health",
+            "predict": "/api/predict",
+            "devices": "/api/devices"
+        }
+    }), 200
 
 
 if __name__ == "__main__":
