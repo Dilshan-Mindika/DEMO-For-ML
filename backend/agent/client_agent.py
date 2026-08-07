@@ -340,7 +340,7 @@ def send_telemetry(server_url: str, api_key: str = "", max_retries: int = 3):
 
 def main():
     parser = argparse.ArgumentParser(description="ApexPulse Enterprise Client Telemetry Agent")
-    parser.add_argument("--server", default="https://demo-for-ml-back.vercel.app", help="Central ApexPulse Server URL (e.g. https://demo-for-ml-back.vercel.app)")
+    parser.add_argument("--server", default="https://apex-ml-back.vercel.app", help="Central ApexPulse Server URL (e.g. https://apex-ml-back.vercel.app)")
     parser.add_argument("--api-key", default="", help="Optional authentication API key for ApexPulse server")
     args = parser.parse_args()
 

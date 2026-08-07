@@ -27,9 +27,23 @@ import {
   PieChart,
   BarChart3,
   X,
-  Menu
+  Menu,
+  Flame,
+  Database,
+  CheckCircle2
 } from "lucide-react";
-import { authenticateUser, UserAccount } from "./auth";
+import { authenticateUserWithFirebase, UserAccount, HARDCODED_ADMIN_USERS } from "./auth";
+import {
+  saveDeviceTelemetryHistory,
+  fetchDeviceHistory,
+  saveMaintenanceLog,
+  fetchMaintenanceLogs,
+  syncDeviceToFirestore,
+  fetchFirestoreDevices,
+  TelemetryHistoryRecord,
+  MaintenanceLogRecord,
+  FirestoreDeviceRecord
+} from "./firebase";
 
 interface TelemetryData {
   device_name: string;
@@ -106,7 +120,7 @@ interface FleetSummary {
   avg_edhi: number;
 }
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://demo-for-ml-back.vercel.app";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://apex-ml-back.vercel.app";
 
 // Simple SVG Donut/Pie Chart Component
 const SimplePieChartCard = ({
@@ -161,7 +175,7 @@ export default function DashboardPage() {
   // Theme State (Dark by default)
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
-  // Navigation State: 'telemetry' | 'cpu_ram' | 'thermal_logs' | 'battery' | 'storage' | 'explainability' | 'maintenance'
+  // Navigation State: 'telemetry' | 'firebase_history' | 'cpu_ram' | 'thermal_logs' | 'battery' | 'storage' | 'explainability' | 'maintenance'
   const [activeTab, setActiveTab] = useState<string>("telemetry");
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
@@ -206,20 +220,33 @@ export default function DashboardPage() {
   const [simBatHealth, setSimBatHealth] = useState<number>(85);
   const [simSSDHealth, setSimSSDHealth] = useState<number>(90);
 
+  // Firestore Database Records State
+  const [firestoreHistory, setFirestoreHistory] = useState<TelemetryHistoryRecord[]>([]);
+  const [firestoreMaintenanceLogs, setFirestoreMaintenanceLogs] = useState<MaintenanceLogRecord[]>([]);
+  const [firestoreDevices, setFirestoreDevices] = useState<FirestoreDeviceRecord[]>([]);
+  const [loadingFirestore, setLoadingFirestore] = useState<boolean>(false);
+
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
   };
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setAuthError(null);
-    const user = authenticateUser(loginEmail, loginPassword);
-    if (user) {
-      setCurrentUser(user);
-      localStorage.setItem("apex_user", JSON.stringify(user));
-      fetchPrediction(true);
-    } else {
-      setAuthError("Incorrect email or password. Please try again.");
+    setLoading(true);
+    try {
+      const user = await authenticateUserWithFirebase(loginEmail, loginPassword);
+      if (user) {
+        setCurrentUser(user);
+        localStorage.setItem("apex_user", JSON.stringify(user));
+        fetchPrediction(true);
+      } else {
+        setAuthError("Incorrect email or password. Please try again.");
+      }
+    } catch (err: any) {
+      setAuthError(err?.message || "Authentication error.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -273,6 +300,10 @@ export default function DashboardPage() {
         setSimBatHealth(ml.battery_health);
         setSimSSDHealth(ml.ssd_health);
       }
+
+      // Sync snapshot to Firebase Firestore DB in background
+      saveDeviceTelemetryHistory(selectedDeviceId, json.telemetry, json.prediction);
+
       fetchFleet();
     } catch (err: unknown) {
       console.error(err);
@@ -282,6 +313,30 @@ export default function DashboardPage() {
       if (showSpinner) setLoading(false);
     }
   }, [manualAge, dailyUsage, selectedDeviceId, fetchFleet]);
+
+  const loadFirestoreData = useCallback(async () => {
+    setLoadingFirestore(true);
+    try {
+      const [hist, logs, devs] = await Promise.all([
+        fetchDeviceHistory(selectedDeviceId === "local" ? undefined : selectedDeviceId, 30),
+        fetchMaintenanceLogs(30),
+        fetchFirestoreDevices()
+      ]);
+      setFirestoreHistory(hist);
+      setFirestoreMaintenanceLogs(logs);
+      setFirestoreDevices(devs);
+    } catch (err) {
+      console.error("Firestore history load error:", err);
+    } finally {
+      setLoadingFirestore(false);
+    }
+  }, [selectedDeviceId]);
+
+  useEffect(() => {
+    if (activeTab === "firebase_history") {
+      loadFirestoreData();
+    }
+  }, [activeTab, loadFirestoreData]);
 
   const selectDevice = async (deviceId: string) => {
     setSelectedDeviceId(deviceId);
@@ -320,6 +375,10 @@ export default function DashboardPage() {
       if (json.telemetry && json.prediction) {
         setData({ telemetry: json.telemetry, prediction: json.prediction });
         setLastUpdatedTime(new Date().toLocaleTimeString());
+
+        // Sync to Firebase Firestore DB
+        saveDeviceTelemetryHistory(deviceId, json.telemetry, json.prediction);
+        syncDeviceToFirestore(json);
       }
     } catch (err: unknown) {
       console.error("Device selection error:", err);
@@ -355,6 +414,9 @@ export default function DashboardPage() {
             }
           : null
       );
+
+      // Log maintenance action to Firebase Firestore DB
+      saveMaintenanceLog(selectedDeviceId, action, result.prediction);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Maintenance simulation error";
       alert(`Maintenance Error: ${msg}`);
@@ -386,10 +448,10 @@ export default function DashboardPage() {
         <div className="w-full max-w-md glass-card p-8 relative z-10">
           <div className="text-center mb-8">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/30 mx-auto mb-4">
-              <Cpu className="w-8 h-8 text-white" />
+              <Flame className="w-8 h-8 text-amber-400" />
             </div>
             <h1 className="text-2xl font-bold font-outfit text-[var(--text-heading)]">ApexPulse Enterprise</h1>
-            <p className="text-xs text-[var(--text-secondary)] mt-1">Smart Laptop Life & Health Monitoring Portal</p>
+            <p className="text-xs text-[var(--text-secondary)] mt-1">Smart Laptop Life & Health Monitoring Portal (Firebase Auth)</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
@@ -443,9 +505,11 @@ export default function DashboardPage() {
 
             <button
               type="submit"
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
             >
-              Sign In to Laptop Portal
+              {loading ? <RotateCw className="w-4 h-4 animate-spin text-white" /> : <Flame className="w-4 h-4 text-amber-400" />}
+              <span>Sign In with Firebase Auth</span>
             </button>
 
             <div className="pt-4 border-t border-[var(--border-card)] text-center space-y-2">
@@ -577,6 +641,8 @@ export default function DashboardPage() {
     });
   }
 
+  const adminAccountsList = Object.values(HARDCODED_ADMIN_USERS).map((item) => item.user);
+
   return (
     <div className={`flex min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${isDarkMode ? "dark-mode" : "light-mode"} transition-colors duration-300`}>
       {/* Mobile Drawer Overlay Backdrop */}
@@ -597,12 +663,12 @@ export default function DashboardPage() {
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-                <Cpu className="w-5 h-5 text-white" />
+                <Flame className="w-5 h-5 text-amber-400" />
               </div>
               <div>
                 <h2 className="font-bold text-base leading-tight font-outfit text-[var(--text-heading)]">ApexPulse</h2>
-                <span className="text-[10px] text-blue-500 uppercase tracking-wider font-semibold block">
-                  Laptop Monitor
+                <span className="text-[10px] text-amber-400 uppercase tracking-wider font-semibold block">
+                  Firebase Connected
                 </span>
               </div>
             </div>
@@ -616,7 +682,8 @@ export default function DashboardPage() {
 
           <nav className="space-y-1">
             {[
-              { id: "telemetry", label: "Laptop Overview & Life", icon: <Activity className="w-4 h-4" /> },
+              { id: "telemetry", label: "Overview & Life Forecast", icon: <Activity className="w-4 h-4" /> },
+              { id: "firebase_history", label: "🔥 Firebase Device History", icon: <Database className="w-4 h-4 text-amber-400" /> },
               { id: "cpu_ram", label: "Processor & Memory Speed", icon: <Cpu className="w-4 h-4" /> },
               { id: "thermal_logs", label: "Temperature & Crashes", icon: <Thermometer className="w-4 h-4" /> },
               { id: "battery", label: "Battery Life & Power", icon: <Battery className="w-4 h-4" /> },
@@ -671,7 +738,7 @@ export default function DashboardPage() {
               </div>
               <div className="overflow-hidden">
                 <strong className="block text-xs font-semibold truncate text-[var(--text-heading)]">{currentUser.name}</strong>
-                <small className="text-[10px] text-[var(--text-secondary)] block truncate">{currentUser.role}</small>
+                <small className="text-[10px] text-amber-400 font-semibold block truncate">Firebase Auth • {currentUser.role}</small>
               </div>
             </div>
             <button onClick={handleLogout} title="Logout" className="text-[var(--text-muted)] hover:text-rose-500 p-1.5 rounded-lg">
@@ -686,12 +753,12 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center gap-3 mb-8">
             <div className="w-11 h-11 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30">
-              <Cpu className="w-6 h-6 text-white" />
+              <Flame className="w-6 h-6 text-amber-400" />
             </div>
             <div>
               <h2 className="font-bold text-lg leading-tight font-outfit text-[var(--text-heading)]">ApexPulse</h2>
-              <span className="text-[11px] text-blue-500 uppercase tracking-wider font-semibold block">
-                Laptop Monitor
+              <span className="text-[11px] text-amber-400 uppercase tracking-wider font-semibold block flex items-center gap-1">
+                <Flame className="w-3 h-3 text-amber-400 inline" /> Firebase Active
               </span>
             </div>
           </div>
@@ -707,7 +774,19 @@ export default function DashboardPage() {
               }`}
             >
               <Activity className="w-4 h-4" />
-              Laptop Overview & Life
+              Overview & Life Forecast
+            </button>
+
+            <button
+              onClick={() => setActiveTab("firebase_history")}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === "firebase_history"
+                  ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-orange-500/30"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
+              }`}
+            >
+              <Database className="w-4 h-4 text-amber-400" />
+              🔥 Firebase Device History
             </button>
 
             <button
@@ -795,16 +874,12 @@ export default function DashboardPage() {
               onClick={toggleTheme}
               aria-label="Toggle Theme"
               className={`w-10 h-5.5 rounded-full p-0.5 transition-colors relative flex items-center border ${
-                isDarkMode
-                  ? "bg-slate-700 border-slate-600"
-                  : "bg-slate-200 border-slate-300"
+                isDarkMode ? "bg-slate-700 border-slate-600" : "bg-slate-200 border-slate-300"
               }`}
             >
               <div
                 className={`w-4.5 h-4.5 rounded-full shadow-sm transition-transform duration-200 ${
-                  isDarkMode
-                    ? "bg-blue-500 translate-x-4.5"
-                    : "bg-slate-500 translate-x-0"
+                  isDarkMode ? "bg-blue-500 translate-x-4.5" : "bg-slate-500 translate-x-0"
                 }`}
               />
             </button>
@@ -817,7 +892,7 @@ export default function DashboardPage() {
               </div>
               <div className="overflow-hidden">
                 <strong className="block text-xs font-semibold truncate text-[var(--text-heading)]">{currentUser.name}</strong>
-                <small className="text-[10px] text-[var(--text-secondary)] block truncate">{currentUser.role}</small>
+                <small className="text-[10px] text-amber-400 font-semibold block truncate">Firebase • {currentUser.role}</small>
               </div>
             </div>
             <button
@@ -860,19 +935,21 @@ export default function DashboardPage() {
             </button>
           </div>
         </div>
+
         {/* Header Bar */}
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold text-blue-500 uppercase tracking-wider">
-                Live Laptop Intelligence System
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
+                <Flame className="w-3.5 h-3.5 text-amber-400" /> Firebase Database Active
               </span>
               <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                Auto-refreshing every 5s
+                Realtime Firestore Sync • 5s Polling
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold font-outfit text-[var(--text-heading)]">
               {activeTab === "telemetry" && "Laptop Overview & Life Forecast"}
+              {activeTab === "firebase_history" && "🔥 Firebase Firestore Telemetry & Audit History"}
               {activeTab === "cpu_ram" && "Processor Speed & Memory Usage"}
               {activeTab === "thermal_logs" && "Laptop Temperature & Shutdown Records"}
               {activeTab === "battery" && "Battery Life & Capacity Health"}
@@ -898,453 +975,392 @@ export default function DashboardPage() {
                   </option>
                 ))}
               </select>
-              <ChevronDown className="w-3.5 h-3.5 text-[var(--text-muted)] absolute right-3 top-3.5 pointer-events-none" />
+              <ChevronDown className="w-4 h-4 text-[var(--text-muted)] absolute right-3 top-3 pointer-events-none" />
             </div>
 
             <button
               onClick={() => fetchPrediction(true)}
               disabled={loading}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white px-5 py-2.5 rounded-full text-sm font-semibold flex items-center gap-2 shadow-lg shadow-blue-500/30 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
+              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2.5 rounded-full text-xs flex items-center gap-2 shadow-lg shadow-blue-600/30 active:scale-95 transition-transform"
             >
-              <RotateCw className={`w-4 h-4 ${loading ? "animate-spin-fast" : ""}`} />
-              <span>{loading ? "Refreshing..." : "Check Now"}</span>
+              <RotateCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+              <span>Refresh Metrics</span>
             </button>
           </div>
         </header>
 
-        {/* Dynamic Warning Alert Popups for High Overuse / Overheating */}
-        {alertsList.length > 0 && (
-          <div className="space-y-3 mb-6">
-            {alertsList.map(
-              (alert) =>
-                !dismissedAlerts[alert.id] && (
-                  <div
-                    key={alert.id}
-                    className={`p-4 rounded-2xl border flex items-center justify-between gap-4 shadow-md transition-all ${
-                      alert.type === "danger"
-                        ? "bg-rose-500/15 border-rose-500/40 text-rose-500"
-                        : alert.type === "warning"
-                        ? "bg-amber-500/15 border-amber-500/40 text-amber-500"
-                        : "bg-blue-500/15 border-blue-500/40 text-blue-500"
-                    }`}
-                  >
-                    <div className="flex items-center gap-3">
-                      <AlertTriangle className="w-5 h-5 flex-shrink-0 animate-bounce" />
-                      <div>
-                        <strong className="block text-sm font-bold">{alert.title}</strong>
-                        <p className="text-xs opacity-90 mt-0.5">{alert.message}</p>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => setDismissedAlerts((prev) => ({ ...prev, [alert.id]: true }))}
-                      className="p-1 hover:bg-black/10 rounded-lg transition-colors"
-                      title="Dismiss Warning"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+        {/* Dynamic Alerts Banner */}
+        <div className="space-y-3 mb-6">
+          {alertsList
+            .filter((alert) => !dismissedAlerts[alert.id])
+            .map((alert) => (
+              <div
+                key={alert.id}
+                className={`p-4 rounded-2xl border flex items-start justify-between gap-4 transition-all shadow-md ${
+                  alert.type === "danger"
+                    ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
+                    : alert.type === "warning"
+                    ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                    : "bg-blue-500/10 border-blue-500/30 text-blue-400"
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-sm leading-tight text-[var(--text-heading)]">{alert.title}</h4>
+                    <p className="text-xs opacity-90 mt-0.5">{alert.message}</p>
                   </div>
-                )
-            )}
-          </div>
-        )}
+                </div>
+                <button
+                  onClick={() => setDismissedAlerts((prev) => ({ ...prev, [alert.id]: true }))}
+                  className="p-1 hover:bg-white/10 rounded-lg text-current opacity-70 hover:opacity-100"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+        </div>
 
-        {error && (
-          <div className="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-500 text-sm flex items-center gap-3">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0" />
-            <div>
-              <strong>Server Connection Notice:</strong> {error}
-              <div className="text-xs text-rose-500 mt-1">
-                Ensure backend API application is running on port 5000 (`python backend/app.py`).
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Fleet Summary Cards Banner */}
-        {fleetSummary && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-            <div className="glass-card p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-blue-500/15 text-blue-500 flex items-center justify-center">
-                <Users className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[11px] text-[var(--text-secondary)] uppercase font-semibold block">Total Monitored Laptops</span>
-                <strong className="text-xl font-bold font-outfit text-[var(--text-heading)]">{fleetSummary.total_devices}</strong>
-              </div>
-            </div>
-
-            <div className="glass-card p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-emerald-500/15 text-emerald-500 flex items-center justify-center">
-                <ShieldCheck className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[11px] text-[var(--text-secondary)] uppercase font-semibold block">Good Laptops</span>
-                <strong className="text-xl font-bold font-outfit text-emerald-500">{fleetSummary.healthy_count}</strong>
-              </div>
-            </div>
-
-            <div className="glass-card p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-amber-500/15 text-amber-500 flex items-center justify-center">
-                <Clock className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[11px] text-[var(--text-secondary)] uppercase font-semibold block">Needs Watching</span>
-                <strong className="text-xl font-bold font-outfit text-amber-500">{fleetSummary.monitor_count}</strong>
-              </div>
-            </div>
-
-            <div className="glass-card p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-rose-500/15 text-rose-500 flex items-center justify-center">
-                <AlertTriangle className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[11px] text-[var(--text-secondary)] uppercase font-semibold block">Action Needed</span>
-                <strong className="text-xl font-bold font-outfit text-rose-500">{fleetSummary.replacement_count}</strong>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* TAB 1: LAPTOP OVERVIEW & LIFE EXPECTANCY */}
+        {/* TAB 1: OVERVIEW & LIFE FORECAST */}
         {activeTab === "telemetry" && (
           <div className="grid grid-cols-12 gap-6">
-            {/* Hero Laptop Life Remaining Banner */}
-            <section className="col-span-12 glass-card p-6 md:p-8 relative overflow-hidden">
-              <div className="flex justify-between items-center mb-6">
-                <span className="bg-blue-500/15 text-blue-500 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">
-                  AI Life Expectancy Forecast
-                </span>
-                <span className="text-xs text-[var(--text-secondary)]">
-                  Laptop: <strong>{telemetry?.device_name && !telemetry.device_name.startsWith("169.254.") ? telemetry.device_name : "Web Preview Session"}</strong> • Serial: <strong>{telemetry?.serial_number || "--"}</strong> • Updated: <strong>{lastUpdatedTime || "--"}</strong>
-                </span>
-              </div>
-
-              <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-8 mb-6">
+            {/* Primary RUL Forecast Card */}
+            <section className="col-span-12 lg:col-span-8 glass-card p-6 flex flex-col justify-between relative overflow-hidden">
+              <div className="flex justify-between items-start mb-6">
                 <div>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-6xl md:text-7xl font-extrabold font-outfit text-[var(--text-heading)]">
-                      {prediction ? prediction.rul_months.toFixed(1) : "--"}
-                    </span>
-                    <span className="text-xl text-[var(--text-secondary)] font-semibold">Months</span>
-                  </div>
-                  <div className="text-sm text-[var(--text-secondary)] mt-2 font-medium">
-                    Estimated Remaining Laptop Useful Life
-                  </div>
+                  <span className="text-xs font-bold text-blue-500 uppercase tracking-wider block mb-1">Remaining Useful Life (RUL)</span>
+                  <h2 className="text-3xl font-extrabold font-outfit text-[var(--text-heading)]">
+                    {prediction ? `${prediction.rul_months.toFixed(1)} Months Left` : "Calculating..."}
+                  </h2>
                 </div>
 
                 <div
-                  className="w-full lg:max-w-md p-5 rounded-2xl border flex items-center gap-5 transition-all"
-                  style={{
-                    borderColor: badge.color,
-                    backgroundColor: "var(--bg-input)",
-                  }}
+                  className="px-4 py-2 rounded-full font-bold text-xs flex items-center gap-2 border shadow-lg"
+                  style={{ backgroundColor: badge.bg, color: badge.color, borderColor: `${badge.color}40` }}
                 >
-                  <div
-                    className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
-                    style={{ backgroundColor: badge.bg }}
-                  >
-                    {badge.icon}
-                  </div>
-                  <div>
-                    <span className="text-xs text-[var(--text-secondary)] uppercase tracking-wider font-semibold block">
-                      Recommended Action
-                    </span>
-                    <h3 className="text-xl font-bold font-outfit" style={{ color: badge.color }}>
-                      {prediction ? getSimpleRecommendationText(prediction.recommendation) : "Analyzing..."}
-                    </h3>
-                  </div>
+                  {badge.icon}
+                  <span>{getSimpleRecommendationText(prediction?.recommendation)}</span>
                 </div>
               </div>
 
-              <div className="pt-4 border-t border-[var(--border-card)] flex flex-wrap items-center justify-between gap-4 text-xs">
-                <div className="flex items-center gap-2">
-                  <span className="text-[var(--text-secondary)]">Daily Workload Profile:</span>
-                  <span className="bg-indigo-500/20 text-indigo-400 px-3 py-1 rounded-lg font-bold">
-                    {mlInput?.usage_profile || "Normal Work"}
-                  </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)]">
+                  <span className="text-[11px] text-[var(--text-secondary)] block">Laptop Age</span>
+                  <strong className="text-sm font-bold text-[var(--text-heading)] block mt-0.5">{mlInput?.age || manualAge} Months</strong>
                 </div>
 
-                <div className="flex items-center gap-6">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[var(--text-secondary)]">Laptop Age (Months):</span>
-                    <input
-                      type="number"
-                      value={manualAge}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setManualAge(val);
-                        fetchPrediction(true, val, dailyUsage);
-                      }}
-                      className="w-16 bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-heading)] rounded-lg px-2 py-1 text-center font-bold focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className="text-[var(--text-secondary)]">Daily Use (Hours/Day):</span>
-                    <input
-                      type="number"
-                      step="0.5"
-                      value={dailyUsage}
-                      onChange={(e) => {
-                        const val = Number(e.target.value);
-                        setDailyUsage(val);
-                        fetchPrediction(true, manualAge, val);
-                      }}
-                      className="w-16 bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-heading)] rounded-lg px-2 py-1 text-center font-bold focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
+                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)]">
+                  <span className="text-[11px] text-[var(--text-secondary)] block">Battery Health</span>
+                  <strong className="text-sm font-bold text-emerald-500 block mt-0.5">{mlInput?.battery_health ? `${mlInput.battery_health.toFixed(1)}%` : "--%"}</strong>
                 </div>
+
+                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)]">
+                  <span className="text-[11px] text-[var(--text-secondary)] block">Hard Drive Health</span>
+                  <strong className="text-sm font-bold text-cyan-500 block mt-0.5">{mlInput?.ssd_health ? `${mlInput.ssd_health.toFixed(1)}%` : "--%"}</strong>
+                </div>
+
+                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)]">
+                  <span className="text-[11px] text-[var(--text-secondary)] block">Operating Temp</span>
+                  <strong className="text-sm font-bold text-amber-500 block mt-0.5">{telemetry?.temperature_current ? `${telemetry.temperature_current.toFixed(1)}°C` : "45.0°C"}</strong>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-[var(--text-muted)] border-t border-[var(--border-card)] pt-4">
+                <span>Model: XGBoost Predictor Pipeline</span>
+                <span>Last Updated: {lastUpdatedTime || "Just now"}</span>
               </div>
             </section>
 
-            {/* FULL OVERVIEW PIE GRAPH VIEWS FOR ALL METRICS */}
-            <section className="col-span-12">
+            {/* EDHI Gauge Card */}
+            <section className="col-span-12 lg:col-span-4">
+              <SimplePieChartCard
+                title="System Health Score (EDHI)"
+                value={mlInput?.edhi ? `${mlInput.edhi.toFixed(1)}` : "85.0"}
+                label="out of 100"
+                percent={mlInput?.edhi || 85}
+                color="#3B82F6"
+                subtext="Overall Hardware Health Index"
+              />
+            </section>
+          </div>
+        )}
+
+        {/* TAB 2: FIREBASE FIRESTORE DEVICE HISTORY & AUTH ACCOUNTS */}
+        {activeTab === "firebase_history" && (
+          <div className="space-y-6">
+            {/* Enterprise Admin Users Registered in Firebase */}
+            <section className="glass-card p-6">
               <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <PieChart className="w-5 h-5 text-blue-500" /> Overall System Health Pie Chart Breakdown
+                <Users className="w-5 h-5 text-amber-400" /> Enterprise Administrator Accounts (`users` collection)
               </h3>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <SimplePieChartCard
-                  title="Overall Laptop Health"
-                  value={mlInput ? `${mlInput.edhi.toFixed(0)}%` : "--%"}
-                  label="Health Index"
-                  percent={mlInput?.edhi || 0}
-                  color="#10B981"
-                  subtext="Combined battery, storage & speed rating"
-                />
-
-                <SimplePieChartCard
-                  title="Battery Condition"
-                  value={mlInput ? `${mlInput.battery_health.toFixed(0)}%` : "--%"}
-                  label="Health Left"
-                  percent={mlInput?.battery_health || 0}
-                  color="#3B82F6"
-                  subtext={mlInput ? `${mlInput.battery_cycles} Charge Cycles` : "--"}
-                />
-
-                <SimplePieChartCard
-                  title="Hard Drive Health"
-                  value={mlInput ? `${mlInput.ssd_health.toFixed(0)}%` : "--%"}
-                  label="Storage Health"
-                  percent={mlInput?.ssd_health || 0}
-                  color="#06B6D4"
-                  subtext="Physical drive health status"
-                />
-
-                <SimplePieChartCard
-                  title="Processor Workload"
-                  value={telemetry?.cpu_usage ? `${telemetry.cpu_usage.toFixed(0)}%` : "0%"}
-                  label="CPU Load"
-                  percent={telemetry?.cpu_usage || 0}
-                  color="#F59E0B"
-                  subtext={telemetry?.temperature_current ? `Temp: ${telemetry.temperature_current.toFixed(0)}°C` : "--"}
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {adminAccountsList.map((acc, idx) => (
+                  <div key={idx} className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)] flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-9 h-9 rounded-full ${acc.avatarColor} text-white font-bold flex items-center justify-center`}>
+                        {acc.name.charAt(0)}
+                      </div>
+                      <div>
+                        <strong className="block text-[var(--text-heading)] font-bold">{acc.name}</strong>
+                        <span className="text-[10px] text-amber-400 font-mono block">{acc.email}</span>
+                        <small className="text-[10px] text-[var(--text-secondary)]">{acc.role}</small>
+                      </div>
+                    </div>
+                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                  </div>
+                ))}
               </div>
             </section>
 
-            {/* Monitored Fleet Inventory Table */}
-            {devicesList.length > 0 && (
-              <section className="col-span-12 glass-card p-6">
-                <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                  <Users className="w-5 h-5 text-blue-500" /> Monitored Laptop Inventory
-                </h3>
+            <section className="glass-card p-6">
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+                <div>
+                  <h3 className="font-bold text-lg font-outfit text-[var(--text-heading)] flex items-center gap-2">
+                    <Flame className="w-5 h-5 text-amber-400" /> Firestore Telemetry History Database (`telemetry_history`)
+                  </h3>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">
+                    Real-time historical telemetry snapshots logged to Firebase Firestore project <code className="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded font-mono">apex-ml-4b1d9</code>.
+                  </p>
+                </div>
 
+                <button
+                  onClick={loadFirestoreData}
+                  disabled={loadingFirestore}
+                  className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm"
+                >
+                  <RotateCw className={`w-3.5 h-3.5 ${loadingFirestore ? "animate-spin" : ""}`} />
+                  <span>Refresh Firestore Logs</span>
+                </button>
+              </div>
+
+              {loadingFirestore ? (
+                <div className="py-12 text-center text-xs text-[var(--text-muted)] flex items-center justify-center gap-2">
+                  <RotateCw className="w-4 h-4 animate-spin text-amber-400" />
+                  <span>Loading Firestore Database records...</span>
+                </div>
+              ) : firestoreHistory.length === 0 ? (
+                <div className="py-10 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-input)] rounded-2xl border border-[var(--border-input)]">
+                  <Database className="w-8 h-8 text-amber-400 mx-auto mb-2 opacity-60" />
+                  <p className="font-bold text-[var(--text-heading)]">No Firestore telemetry snapshots recorded yet.</p>
+                  <p className="mt-1">Telemetry automatically syncs to Firebase Firestore during standard 5-second polling.</p>
+                </div>
+              ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-xs text-left border-collapse">
                     <thead>
                       <tr className="border-b border-[var(--table-header-border)] text-[var(--text-secondary)]">
-                        <th className="py-3 px-4">Laptop Name</th>
-                        <th className="py-3 px-4">Model & Serial</th>
-                        <th className="py-3 px-4">Life Expectancy</th>
+                        <th className="py-3 px-4">Timestamp</th>
+                        <th className="py-3 px-4">Device ID</th>
+                        <th className="py-3 px-4">CPU / RAM / Disk</th>
+                        <th className="py-3 px-4">Battery / SSD Health</th>
+                        <th className="py-3 px-4">Health Index (EDHI)</th>
+                        <th className="py-3 px-4">RUL Forecast</th>
                         <th className="py-3 px-4">Status</th>
-                        <th className="py-3 px-4">Battery Health</th>
-                        <th className="py-3 px-4">Overall Score</th>
-                        <th className="py-3 px-4">Action</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-[var(--table-header-border)]">
-                      {devicesList.map((dev) => (
-                        <tr key={dev.device_id} className="hover:bg-[var(--table-hover)] transition-colors">
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">{dev.device_name}</td>
-                          <td className="py-3 px-4 text-[var(--text-secondary)]">{dev.device_model} ({dev.serial_number})</td>
-                          <td className="py-3 px-4 font-bold text-blue-500">{dev.rul_months.toFixed(1)} Months</td>
-                          <td className="py-3 px-4 font-semibold" style={{ color: dev.status_color }}>{getSimpleRecommendationText(dev.recommendation)}</td>
-                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">{dev.battery_health.toFixed(1)}%</td>
-                          <td className="py-3 px-4 font-mono text-emerald-500 font-bold">{dev.edhi.toFixed(1)} / 100</td>
+                      {firestoreHistory.map((rec, idx) => (
+                        <tr key={rec.id || idx} className="hover:bg-[var(--table-hover)] transition-colors">
+                          <td className="py-3 px-4 font-mono text-[var(--text-muted)]">
+                            {rec.timestamp ? new Date(rec.timestamp).toLocaleString() : "Just now"}
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">
+                            {rec.device_id}
+                          </td>
+                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">
+                            {rec.cpu_usage?.toFixed(1)}% / {rec.ram_usage?.toFixed(1)}% / {rec.disk_usage?.toFixed(1)}%
+                          </td>
+                          <td className="py-3 px-4 font-mono">
+                            <span className="text-emerald-400 font-bold">{rec.battery_health?.toFixed(1)}% Bat</span> •{" "}
+                            <span className="text-cyan-400 font-bold">{rec.ssd_health?.toFixed(1)}% SSD</span>
+                          </td>
+                          <td className="py-3 px-4 font-bold text-blue-400">
+                            {rec.edhi?.toFixed(1)} / 100
+                          </td>
+                          <td className="py-3 px-4 font-bold text-emerald-400">
+                            {rec.rul_months?.toFixed(1)} Months
+                          </td>
                           <td className="py-3 px-4">
-                            <button
-                              onClick={() => selectDevice(dev.device_id)}
-                              className="bg-blue-500/20 hover:bg-blue-500/40 text-blue-500 dark:text-blue-300 px-3 py-1 rounded-lg text-[11px] font-semibold transition-colors"
-                            >
-                              Inspect Laptop
-                            </button>
+                            <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-semibold text-[11px]">
+                              {rec.recommendation}
+                            </span>
                           </td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
                 </div>
-              </section>
-            )}
+              )}
+            </section>
+
+            <section className="glass-card p-6">
+              <h3 className="font-bold text-lg font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
+                <Wrench className="w-5 h-5 text-indigo-400" /> Firestore Maintenance Audit Log (`maintenance_logs`)
+              </h3>
+
+              {firestoreMaintenanceLogs.length === 0 ? (
+                <div className="py-8 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-input)] rounded-2xl border border-[var(--border-input)]">
+                  <span>No maintenance actions recorded in Firestore yet. Trigger a repair simulation in the "Fix & Upgrade Guide" tab to log events.</span>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs text-left border-collapse">
+                    <thead>
+                      <tr className="border-b border-[var(--table-header-border)] text-[var(--text-secondary)]">
+                        <th className="py-3 px-4">Time</th>
+                        <th className="py-3 px-4">Device ID</th>
+                        <th className="py-3 px-4">Action Applied</th>
+                        <th className="py-3 px-4">Post-Repair RUL</th>
+                        <th className="py-3 px-4">Updated EDHI</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-[var(--table-header-border)]">
+                      {firestoreMaintenanceLogs.map((log, idx) => (
+                        <tr key={log.id || idx} className="hover:bg-[var(--table-hover)] transition-colors">
+                          <td className="py-3 px-4 font-mono text-[var(--text-muted)]">
+                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : "Recent"}
+                          </td>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">{log.device_id}</td>
+                          <td className="py-3 px-4 font-bold text-indigo-400 uppercase tracking-wider">{log.action.replace("_", " ")}</td>
+                          <td className="py-3 px-4 font-bold text-emerald-400">{log.rul_months?.toFixed(1)} Months</td>
+                          <td className="py-3 px-4 font-bold text-blue-400">{log.edhi?.toFixed(1)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
           </div>
         )}
 
-        {/* TAB 2: PROCESSOR & MEMORY SPEED DEEP-DIVE */}
+        {/* TAB 3: PROCESSOR & MEMORY SPEED */}
         {activeTab === "cpu_ram" && (
           <div className="grid grid-cols-12 gap-6">
             <section className="col-span-12 lg:col-span-6 glass-card p-6">
               <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <Cpu className="w-5 h-5 text-blue-500" /> Processor Speed & Load
+                <Cpu className="w-5 h-5 text-blue-500" /> Processor Usage & Workload
               </h3>
 
-              <div className="space-y-6">
-                <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)]">
-                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Current Processor Load</span>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-4xl font-extrabold font-outfit text-[var(--text-heading)]">
-                      {telemetry?.cpu_usage !== undefined && telemetry?.cpu_usage !== null ? `${telemetry.cpu_usage.toFixed(1)}%` : "--%"}
-                    </span>
-                    <span className="text-xs text-blue-500 font-semibold">Active Workload</span>
-                  </div>
-                  <div className="w-full h-3 bg-[var(--bg-card)] rounded-full mt-3 overflow-hidden border border-[var(--border-card)]">
-                    <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, telemetry?.cpu_usage || 0)}%` }} />
-                  </div>
+              <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] mb-6">
+                <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Processor Load</span>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-4xl font-extrabold font-outfit text-blue-500">
+                    {telemetry?.cpu_usage !== undefined && telemetry?.cpu_usage !== null ? `${telemetry.cpu_usage.toFixed(1)}%` : "--%"}
+                  </span>
+                  <span className="text-xs text-[var(--text-secondary)]">Current Activity Level</span>
                 </div>
+                <div className="w-full h-3 bg-[var(--bg-card)] rounded-full mt-3 overflow-hidden border border-[var(--border-card)]">
+                  <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" style={{ width: `${Math.min(100, telemetry?.cpu_usage || 0)}%` }} />
+                </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
-                    <span className="text-[var(--text-secondary)] block">Laptop Name</span>
-                    <strong className="text-sm text-[var(--text-heading)] block mt-0.5">{telemetry?.device_name || "--"}</strong>
-                  </div>
-                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
-                    <span className="text-[var(--text-secondary)] block">System Version</span>
-                    <strong className="text-sm text-[var(--text-heading)] block mt-0.5">{telemetry?.os_name || "--"} ({telemetry?.os_version || "--"})</strong>
-                  </div>
+              <div className="space-y-3 text-xs">
+                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
+                  <span className="text-[var(--text-secondary)]">Operating System</span>
+                  <span className="font-semibold text-[var(--text-heading)]">{telemetry?.os_name || "Windows"} ({telemetry?.os_version || "Pro"})</span>
+                </div>
+                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
+                  <span className="text-[var(--text-secondary)]">Laptop Model</span>
+                  <span className="font-semibold text-[var(--text-heading)]">{telemetry?.device_model || "Standard Laptop"}</span>
                 </div>
               </div>
             </section>
 
             <section className="col-span-12 lg:col-span-6 glass-card p-6">
               <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <Zap className="w-5 h-5 text-indigo-500" /> System Memory (RAM) Usage
+                <Zap className="w-5 h-5 text-indigo-500" /> System RAM Memory Usage
               </h3>
 
-              <div className="space-y-6">
-                <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)]">
-                  <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Memory (RAM) In Use</span>
-                  <div className="flex items-baseline gap-3">
-                    <span className="text-4xl font-extrabold font-outfit text-[var(--text-heading)]">
-                      {telemetry?.ram_usage !== undefined && telemetry?.ram_usage !== null ? `${telemetry.ram_usage.toFixed(1)}%` : "--%"}
-                    </span>
-                    <span className="text-xs text-indigo-500 font-semibold">Memory Load</span>
-                  </div>
-                  <div className="w-full h-3 bg-[var(--bg-card)] rounded-full mt-3 overflow-hidden border border-[var(--border-card)]">
-                    <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(100, telemetry?.ram_usage || 0)}%` }} />
-                  </div>
+              <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] mb-6">
+                <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">RAM Memory Used</span>
+                <div className="flex items-baseline gap-3">
+                  <span className="text-4xl font-extrabold font-outfit text-indigo-500">
+                    {telemetry?.ram_usage !== undefined && telemetry?.ram_usage !== null ? `${telemetry.ram_usage.toFixed(1)}%` : "--%"}
+                  </span>
+                  <span className="text-xs text-[var(--text-secondary)]">Memory Load</span>
                 </div>
-
-                <div className="grid grid-cols-2 gap-4 text-xs">
-                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
-                    <span className="text-[var(--text-secondary)] block">Time Running</span>
-                    <strong className="text-sm text-[var(--text-heading)] block mt-0.5">{telemetry?.uptime_hours || "--"} Hours</strong>
-                  </div>
-                  <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)]">
-                    <span className="text-[var(--text-secondary)] block">Workload & Speed Score</span>
-                    <strong className="text-sm text-blue-500 block mt-0.5">{mlInput?.performance_score.toFixed(1) || "--"} / 100</strong>
-                  </div>
+                <div className="w-full h-3 bg-[var(--bg-card)] rounded-full mt-3 overflow-hidden border border-[var(--border-card)]">
+                  <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" style={{ width: `${Math.min(100, telemetry?.ram_usage || 0)}%` }} />
                 </div>
-
-                {/* Physical RAM Module Breakdown (Multiple RAM sticks) */}
-                {telemetry?.ram_modules && telemetry.ram_modules.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-[var(--border-card)]">
-                    <span className="text-xs font-bold text-[var(--text-heading)] block uppercase tracking-wider">Installed Physical RAM Stick Modules</span>
-                    <div className="space-y-2">
-                      {telemetry.ram_modules.map((mod, i) => (
-                        <div key={i} className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border-input)] flex items-center justify-between text-xs">
-                          <div className="flex items-center gap-2">
-                            <Zap className="w-4 h-4 text-indigo-400" />
-                            <div>
-                              <strong className="block text-[var(--text-heading)]">{mod.bank} ({mod.manufacturer || "RAM"})</strong>
-                              <span className="text-[10px] text-[var(--text-secondary)]">{mod.speed_mhz ? `${mod.speed_mhz} MHz Speed` : "Standard Speed"}</span>
-                            </div>
-                          </div>
-                          <span className="font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg">{mod.capacity_gb} GB</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
+
+              {telemetry?.ram_modules && telemetry.ram_modules.length > 0 && (
+                <div className="space-y-2 mt-4 pt-3 border-t border-[var(--border-card)]">
+                  <span className="text-xs font-bold text-[var(--text-heading)] block uppercase tracking-wider">Installed System Memory Modules (RAM Slots)</span>
+                  <div className="space-y-2">
+                    {telemetry.ram_modules.map((ram, i) => (
+                      <div key={i} className="bg-[var(--bg-input)] p-3 rounded-xl border border-[var(--border-input)] flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <Zap className="w-4 h-4 text-indigo-400" />
+                          <div>
+                            <strong className="block text-[var(--text-heading)]">{ram.bank}</strong>
+                            <span className="text-[10px] text-[var(--text-secondary)]">{ram.manufacturer || "System Memory"} • {ram.speed_mhz ? `${ram.speed_mhz} MHz` : "DDR4/DDR5"}</span>
+                          </div>
+                        </div>
+                        <span className="font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-lg">{ram.capacity_gb} GB</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </section>
           </div>
         )}
 
-        {/* TAB 3: TEMPERATURE & CRASHES DEEP-DIVE */}
+        {/* TAB 4: TEMPERATURE & CRASHES */}
         {activeTab === "thermal_logs" && (
           <div className="grid grid-cols-12 gap-6">
             <section className="col-span-12 lg:col-span-6 glass-card p-6">
               <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <Thermometer className="w-5 h-5 text-amber-500" /> Laptop Heat & Temperature
+                <Thermometer className="w-5 h-5 text-amber-500" /> Laptop Operating Heat (Temperature)
               </h3>
 
               <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] mb-6">
                 <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Current Temperature</span>
                 <div className="flex items-baseline gap-3">
                   <span className="text-4xl font-extrabold font-outfit text-amber-500">
-                    {mlInput ? `${mlInput.temperature.toFixed(1)} °C` : "-- °C"}
+                    {telemetry?.temperature_current ? `${telemetry.temperature_current.toFixed(1)}°C` : "45.0°C"}
                   </span>
-                  <span className="text-xs text-[var(--text-secondary)]">Internal Sensor</span>
-                </div>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
-                  <span className="text-[var(--text-secondary)]">Heat Status</span>
-                  <span className="bg-emerald-500/20 text-emerald-500 font-bold px-2.5 py-0.5 rounded">Safe Operating Temperature</span>
+                  <span className="text-xs text-[var(--text-secondary)] font-medium">Normal Operating Heat</span>
                 </div>
               </div>
             </section>
 
             <section className="col-span-12 lg:col-span-6 glass-card p-6">
               <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <AlertTriangle className="w-5 h-5 text-rose-500" /> Unexpected Laptop Crashes (Last 30 Days)
+                <AlertTriangle className="w-5 h-5 text-rose-500" /> Unexpected Laptop Crashes & Shutdowns
               </h3>
 
               <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] mb-6">
-                <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Unexpected Shutdowns</span>
+                <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Crashes in Last 30 Days</span>
                 <div className="flex items-baseline gap-3">
                   <span className="text-4xl font-extrabold font-outfit text-rose-500">
-                    {mlInput ? mlInput.shutdown_count : "--"}
+                    {mlInput?.shutdown_count || 0}
                   </span>
-                  <span className="text-xs text-[var(--text-secondary)]">Times Laptop Turned Off Suddenly</span>
-                </div>
-              </div>
-
-              <div className="space-y-3 text-xs">
-                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
-                  <span className="text-[var(--text-secondary)]">Crash Log Record</span>
-                  <span className="font-bold text-[var(--text-primary)]">Windows Power Event History</span>
+                  <span className="text-xs text-[var(--text-secondary)] font-medium">Unexpected Shutdowns Recorded</span>
                 </div>
               </div>
             </section>
           </div>
         )}
 
-        {/* TAB 4: BATTERY LIFE & HEALTH DEEP-DIVE */}
+        {/* TAB 5: BATTERY LIFE & POWER */}
         {activeTab === "battery" && (
           <div className="grid grid-cols-12 gap-6">
             <section className="col-span-12 lg:col-span-6 glass-card p-6">
               <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <Battery className="w-5 h-5 text-emerald-500" /> Battery Health & Charge Capacity
+                <Battery className="w-5 h-5 text-emerald-500" /> Battery Health & Remaining Power
               </h3>
 
               <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] mb-6">
-                <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Remaining Battery Health</span>
+                <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Battery Health Score</span>
                 <div className="flex items-baseline gap-3">
                   <span className="text-4xl font-extrabold font-outfit text-emerald-500">
                     {mlInput ? `${mlInput.battery_health.toFixed(1)}%` : "--%"}
                   </span>
-                  <span className="text-xs text-[var(--text-secondary)]">Original Power Holding Level</span>
+                  <span className="text-xs text-emerald-500 font-semibold">Good Condition</span>
                 </div>
                 <div className="w-full h-3 bg-[var(--bg-card)] rounded-full mt-3 overflow-hidden border border-[var(--border-card)]">
                   <div className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full" style={{ width: `${mlInput?.battery_health || 0}%` }} />
@@ -1397,7 +1413,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* TAB 5: STORAGE & HARD DRIVE HEALTH DEEP-DIVE */}
+        {/* TAB 6: STORAGE & HARD DRIVE HEALTH */}
         {activeTab === "storage" && (
           <div className="grid grid-cols-12 gap-6">
             <section className="col-span-12 lg:col-span-6 glass-card p-6">
@@ -1418,14 +1434,6 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              <div className="space-y-3 text-xs">
-                <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)] flex justify-between items-center">
-                  <span className="text-[var(--text-secondary)]">Drive Diagnostic Check</span>
-                  <span className="font-mono text-emerald-500 font-bold">Healthy Drives Verified</span>
-                </div>
-              </div>
-
-              {/* Physical Storage Drives Breakdown (Multiple SSDs/HDDs) */}
               {telemetry?.storage_drives && telemetry.storage_drives.length > 0 && (
                 <div className="space-y-2 mt-4 pt-3 border-t border-[var(--border-card)]">
                   <span className="text-xs font-bold text-[var(--text-heading)] block uppercase tracking-wider">Installed Physical Storage Drives & Hard Drives</span>
@@ -1464,18 +1472,11 @@ export default function DashboardPage() {
                   <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full" style={{ width: `${Math.min(100, telemetry?.disk_usage || 0)}%` }} />
                 </div>
               </div>
-
-              <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)] text-xs">
-                <span className="text-[var(--text-secondary)] block">Tip for Hard Drive Health</span>
-                <p className="text-[var(--text-primary)] mt-1">
-                  Keep at least 15% free space on your hard drive so windows can run smoothly and fast.
-                </p>
-              </div>
             </section>
           </div>
         )}
 
-        {/* TAB 6: WHAT AFFECTS LAPTOP LIFE & SLIDER TOOL */}
+        {/* TAB 7: WHAT AFFECTS LAPTOP LIFE */}
         {activeTab === "explainability" && (
           <div className="grid grid-cols-12 gap-6">
             <section className="col-span-12 lg:col-span-6 glass-card p-6">
@@ -1563,7 +1564,7 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* TAB 7: REPAIR & HARDWARE UPGRADE GUIDE */}
+        {/* TAB 8: REPAIR & HARDWARE UPGRADE GUIDE */}
         {activeTab === "maintenance" && (
           <div className="grid grid-cols-12 gap-6">
             <section className="col-span-12 glass-card p-6">

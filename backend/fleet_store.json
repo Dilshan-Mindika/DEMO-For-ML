@@ -61,5 +61,68 @@
       },
       "timestamp": "2026-08-06T20:37:30.482202"
     }
+  },
+  "desktop-k6s3qf9-n/a": {
+    "device_id": "desktop-k6s3qf9-n/a",
+    "device_name": "DESKTOP-K6S3QF9",
+    "device_model": "Standard Laptop",
+    "manufacturer": "Unknown",
+    "os_name": "Windows",
+    "os_version": "10.0.26200",
+    "serial_number": "N/A",
+    "last_seen": "2026-08-08T00:15:01.744127",
+    "telemetry": {
+      "device_name": "DESKTOP-K6S3QF9",
+      "device_model": "Standard Laptop",
+      "os_name": "Windows",
+      "os_version": "10.0.26200",
+      "manufacturer": "Unknown",
+      "serial_number": "N/A",
+      "cpu_usage": 16.7,
+      "ram_usage": 52.2,
+      "disk_usage": 58.9,
+      "battery_percent": 100,
+      "power_plugged": true,
+      "design_capacity_mwh": 65003,
+      "full_charge_capacity_mwh": 57242,
+      "battery_health": 88.06,
+      "battery_wear": 11.94,
+      "battery_cycles": 2,
+      "temperature_current": 45.0,
+      "temperature_avg": 45.0,
+      "disk_health_status": [
+        {
+          "FriendlyName": "PhysicalDisk0",
+          "HealthStatus": "Healthy"
+        }
+      ],
+      "ssd_health_percent": 100.0,
+      "ram_modules": null,
+      "storage_drives": null,
+      "cpu_details": null,
+      "uptime_hours": 66.5,
+      "shutdowns_30d": 0,
+      "timestamp": "2026-08-08T00:15:01.743857"
+    },
+    "prediction": {
+      "rul_months": 21.1,
+      "recommendation": "Plan Replacement",
+      "status_level": "plan_replacement",
+      "status_color": "#F59E0B",
+      "ml_input": {
+        "device_model": "Standard Laptop",
+        "usage_profile": "Normal",
+        "age": 24.0,
+        "usage_hours": 4680.0,
+        "battery_cycles": 2,
+        "battery_health": 88.06,
+        "ssd_health": 100.0,
+        "temperature": 45.0,
+        "performance_score": 70.5,
+        "shutdown_count": 0,
+        "edhi": 92.59
+      },
+      "timestamp": "2026-08-08T00:15:01.744117"
+    }
   }
 }
