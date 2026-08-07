@@ -1,10 +1,10 @@
 @echo off
-TITLE ApexPulse Enterprise Client Agent - 1-Click Installer
+TITLE ApexPulse Enterprise Client Agent v1.1.2 - 1-Click Installer
 COLOR 0A
 CLS
 
 echo ============================================================
-echo   ApexPulse Enterprise Client Telemetry Agent Installer
+echo   ApexPulse Enterprise Client Telemetry Agent Installer v1.1.2
 echo   Configuring 1-Click Windows Startup Background Service...
 echo ============================================================
 echo.
@@ -38,7 +38,7 @@ echo [+] Agent script installed to: %TARGET_DIR%\client_agent.py
 IF "%~1" NEQ "" (
     SET "SERVER_URL=%~1"
 ) ELSE IF "%SERVER_URL%"=="" (
-    SET "SERVER_URL=http://127.0.0.1:5000"
+    SET "SERVER_URL=https://apex-ml-back.vercel.app"
 )
 
 echo [+] Central Server URL set to: %SERVER_URL%
@@ -53,7 +53,7 @@ start "" pythonw.exe "%TARGET_DIR%\client_agent.py" --server "%SERVER_URL%"
 
 echo.
 echo ============================================================
-echo   SUCCESS! ApexPulse Agent is now running in the background.
+echo   SUCCESS! ApexPulse Agent v1.1.2 is now running in the background.
 echo   It will automatically launch whenever this device starts up!
 echo ============================================================
 echo.

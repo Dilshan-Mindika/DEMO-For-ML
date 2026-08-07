@@ -792,8 +792,11 @@ export default function DashboardPage() {
                 className="w-20 h-20 object-contain relative z-10 animate-logo-glow"
               />
             </div>
-            <h1 className="text-2xl font-bold font-outfit text-[var(--text-heading)] tracking-tight">ApexPulse Enterprise</h1>
-            <p className="text-xs text-[var(--text-secondary)] mt-1.5 font-medium">Smart Laptop Life & Health Monitoring Console</p>
+            <div className="flex items-center justify-center gap-2 mt-1">
+              <h1 className="text-2xl font-bold font-outfit text-[var(--text-heading)] tracking-tight">ApexPulse Enterprise</h1>
+              <span className="text-[10px] text-cyan-400 font-extrabold bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 rounded-full uppercase tracking-wider font-mono shadow-sm">v1.1.2</span>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] mt-1 font-medium">Smart Laptop Life & Health Monitoring Console</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
@@ -855,13 +858,16 @@ export default function DashboardPage() {
             </button>
 
             <div className="pt-4 border-t border-[var(--border-card)] text-center space-y-2">
-              <p className="text-xs text-[var(--text-secondary)] font-medium">Desktop Telemetry Agent Management</p>
+              <p className="text-xs text-[var(--text-secondary)] font-semibold flex items-center justify-center gap-1.5">
+                <span>Desktop Telemetry Agent Management</span>
+                <span className="text-[10px] text-cyan-400 font-mono font-bold bg-cyan-500/10 border border-cyan-500/30 px-1.5 py-0.5 rounded">v1.1.2</span>
+              </p>
               <div className="grid grid-cols-3 gap-2">
                 <a
                   href="/ApexPulseAgent.exe"
                   download="ApexPulseAgent.exe"
                   className="bg-[var(--bg-input)] hover:bg-emerald-500/10 border border-[var(--border-input)] hover:border-emerald-500/50 text-emerald-400 font-semibold py-2 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1 shadow-sm transition-all hover:scale-[1.01]"
-                  title="Download Windows Agent Executable"
+                  title="Download Windows Agent Executable v1.1.2"
                 >
                   <Download className="w-3.5 h-3.5 text-emerald-400" />
                   Install (.exe)
@@ -870,7 +876,7 @@ export default function DashboardPage() {
                   href="/downloads/Install_ApexPulse_Agent.bat"
                   download="Install_ApexPulse_Agent.bat"
                   className="bg-[var(--bg-input)] hover:bg-blue-500/10 border border-[var(--border-input)] hover:border-blue-500/50 text-blue-400 font-semibold py-2 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1 shadow-sm transition-all hover:scale-[1.01]"
-                  title="Download Install Script"
+                  title="Download Install Script v1.1.2"
                 >
                   <Download className="w-3.5 h-3.5 text-blue-400" />
                   Install (.bat)
@@ -879,7 +885,7 @@ export default function DashboardPage() {
                   href="/downloads/Uninstall_ApexPulse_Agent.bat"
                   download="Uninstall_ApexPulse_Agent.bat"
                   className="bg-[var(--bg-input)] hover:bg-rose-500/10 border border-[var(--border-input)] hover:border-rose-500/50 text-rose-400 font-semibold py-2 px-2 rounded-xl text-[11px] flex items-center justify-center gap-1 shadow-sm transition-all hover:scale-[1.01]"
-                  title="Download Uninstaller Script"
+                  title="Download Uninstaller Script v1.1.2"
                 >
                   <LogOut className="w-3.5 h-3.5 text-rose-400" />
                   Uninstall (.bat)
@@ -1060,7 +1066,10 @@ export default function DashboardPage() {
                 <img src="/icon.png" alt="ApexPulse Logo" className="w-10 h-10 object-contain animate-logo-glow" />
               </div>
               <div>
-                <h2 className="font-bold text-base leading-tight font-outfit text-[var(--text-heading)]">ApexPulse</h2>
+                <div className="flex items-center gap-1.5">
+                  <h2 className="font-bold text-base leading-tight font-outfit text-[var(--text-heading)]">ApexPulse</h2>
+                  <span className="text-[9px] text-cyan-400 font-extrabold bg-cyan-500/10 border border-cyan-500/30 px-1.5 py-0.2 rounded font-mono">v1.1.2</span>
+                </div>
                 <span className="text-[10px] text-cyan-400 uppercase tracking-wider font-semibold block">
                   Enterprise Console
                 </span>
@@ -1176,7 +1185,10 @@ export default function DashboardPage() {
               </div>
               {!sidebarCollapsed && (
                 <div className="truncate">
-                  <h2 className="font-bold text-sm leading-tight font-outfit text-[var(--text-heading)] truncate">ApexPulse</h2>
+                  <div className="flex items-center gap-1.5">
+                    <h2 className="font-bold text-sm leading-tight font-outfit text-[var(--text-heading)] truncate">ApexPulse</h2>
+                    <span className="text-[9px] text-cyan-400 font-extrabold bg-cyan-500/10 border border-cyan-500/30 px-1.5 py-0.2 rounded font-mono">v1.1.2</span>
+                  </div>
                   <span className="text-[9px] text-cyan-400 uppercase tracking-wider font-semibold block truncate">
                     Enterprise Console
                   </span>
@@ -1357,8 +1369,8 @@ export default function DashboardPage() {
               <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1">
                 <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Enterprise Health Monitoring Active
               </span>
-              <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                Real-Time Telemetry Sync
+              <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full font-mono">
+                Telemetry Sync • v1.1.2
               </span>
             </div>
             <h1 className="text-xl sm:text-2xl md:text-3xl font-bold font-outfit text-[var(--text-heading)]">
