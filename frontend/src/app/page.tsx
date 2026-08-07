@@ -231,6 +231,97 @@ export default function DashboardPage() {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
+  // Profile Management Modal State
+  const [profileModalOpen, setProfileModalOpen] = useState<boolean>(false);
+  const [profileForm, setProfileForm] = useState<{
+    name: string;
+    email: string;
+    role: string;
+    avatarColor: string;
+    password: string;
+    confirmPassword: string;
+  }>({
+    name: "",
+    email: "",
+    role: "Lead IT Administrator",
+    avatarColor: "bg-blue-600",
+    password: "",
+    confirmPassword: "",
+  });
+  const [profileShowPassword, setProfileShowPassword] = useState<boolean>(false);
+  const [profileShowConfirmPassword, setProfileShowConfirmPassword] = useState<boolean>(false);
+  const [profileSuccessMsg, setProfileSuccessMsg] = useState<string | null>(null);
+  const [profileErrorMsg, setProfileErrorMsg] = useState<string | null>(null);
+
+  const openProfileModal = () => {
+    if (currentUser) {
+      const existing = usersList.find((u) => u.email.toLowerCase() === currentUser.email.toLowerCase());
+      setProfileForm({
+        name: currentUser.name,
+        email: currentUser.email,
+        role: currentUser.role,
+        avatarColor: currentUser.avatarColor || "bg-blue-600",
+        password: existing?.password || "admin123",
+        confirmPassword: existing?.password || "admin123",
+      });
+      setProfileShowPassword(false);
+      setProfileShowConfirmPassword(false);
+      setProfileSuccessMsg(null);
+      setProfileErrorMsg(null);
+      setProfileModalOpen(true);
+    }
+  };
+
+  const handleSaveProfile = (e: React.FormEvent) => {
+    e.preventDefault();
+    setProfileSuccessMsg(null);
+    setProfileErrorMsg(null);
+
+    if (profileForm.password !== profileForm.confirmPassword) {
+      setProfileErrorMsg("Passwords do not match! Please verify both password fields.");
+      return;
+    }
+
+    if (!profileForm.name.trim() || !profileForm.email.trim()) {
+      setProfileErrorMsg("Full name and email address are required.");
+      return;
+    }
+
+    const updatedUser: UserAccount = {
+      email: profileForm.email.trim(),
+      name: profileForm.name.trim(),
+      role: profileForm.role.trim(),
+      avatarColor: profileForm.avatarColor,
+    };
+
+    setCurrentUser(updatedUser);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("apex_user", JSON.stringify(updatedUser));
+    }
+
+    setUsersList((prev) => {
+      const next = prev.map((u) => {
+        if (u.email.toLowerCase() === currentUser?.email.toLowerCase()) {
+          return {
+            ...updatedUser,
+            password: profileForm.password,
+          };
+        }
+        return u;
+      });
+      if (typeof window !== "undefined") {
+        localStorage.setItem("apex_users_list", JSON.stringify(next));
+      }
+      return next;
+    });
+
+    setProfileSuccessMsg("Profile details & security credentials updated successfully!");
+    setTimeout(() => {
+      setProfileModalOpen(false);
+      setProfileSuccessMsg(null);
+    }, 1200);
+  };
+
   // Dismissed Alert Banner State
   const [dismissedAlerts, setDismissedAlerts] = useState<Record<string, boolean>>({});
 
@@ -1040,8 +1131,15 @@ export default function DashboardPage() {
           </div>
 
           <div className="bg-[var(--bg-input)] border border-[var(--border-input)] p-3 rounded-xl flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className={`w-8 h-8 rounded-full ${currentUser.avatarColor} flex items-center justify-center font-bold text-xs text-white`}>
+            <div
+              onClick={() => {
+                setMobileMenuOpen(false);
+                openProfileModal();
+              }}
+              className="flex items-center gap-2.5 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity flex-1"
+              title="Manage Profile Settings"
+            >
+              <div className={`w-8 h-8 rounded-full ${currentUser.avatarColor} flex items-center justify-center font-bold text-xs text-white shadow-md flex-shrink-0`}>
                 {currentUser.name.charAt(0)}
               </div>
               <div className="overflow-hidden">
@@ -1049,8 +1147,15 @@ export default function DashboardPage() {
                 <small className="text-[10px] text-cyan-400 font-semibold block truncate">{currentUser.role}</small>
               </div>
             </div>
-            <button onClick={handleLogout} title="Logout" className="text-[var(--text-muted)] hover:text-rose-500 p-1.5 rounded-lg">
-              <LogOut className="w-4 h-4" />
+            <button
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleLogout();
+              }}
+              title="Logout"
+              className="text-[var(--text-muted)] hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-500/10 transition-colors cursor-pointer"
+            >
+              <LogOut className="w-4 h-4 text-rose-400" />
             </button>
           </div>
         </div>
@@ -1169,9 +1274,13 @@ export default function DashboardPage() {
 
           {sidebarCollapsed ? (
             <div className="bg-[var(--bg-input)] border border-[var(--border-input)] p-1.5 rounded-xl flex flex-col items-center gap-1.5">
-              <div className={`w-7 h-7 rounded-full ${currentUser.avatarColor} flex items-center justify-center font-bold text-xs text-white shadow-md`} title={currentUser.name}>
+              <button
+                onClick={openProfileModal}
+                className={`w-7.5 h-7.5 rounded-full ${currentUser.avatarColor} flex items-center justify-center font-bold text-xs text-white shadow-md hover:scale-110 transition-transform cursor-pointer`}
+                title={`Manage Profile (${currentUser.name})`}
+              >
                 {currentUser.name.charAt(0)}
-              </div>
+              </button>
               <button
                 onClick={handleLogout}
                 title={`Logout (${currentUser.name})`}
@@ -1182,12 +1291,16 @@ export default function DashboardPage() {
             </div>
           ) : (
             <div className="bg-[var(--bg-input)] border border-[var(--border-input)] p-2 rounded-xl flex items-center justify-between">
-              <div className="flex items-center gap-2 overflow-hidden">
-                <div className={`w-7.5 h-7.5 rounded-full ${currentUser.avatarColor} flex items-center justify-center font-bold text-xs text-white flex-shrink-0 shadow-md`}>
+              <div
+                onClick={openProfileModal}
+                className="flex items-center gap-2 overflow-hidden cursor-pointer hover:opacity-90 transition-opacity flex-1 group"
+                title="Click to Manage Profile & Account Settings"
+              >
+                <div className={`w-7.5 h-7.5 rounded-full ${currentUser.avatarColor} flex items-center justify-center font-bold text-xs text-white flex-shrink-0 shadow-md group-hover:scale-105 transition-transform`}>
                   {currentUser.name.charAt(0)}
                 </div>
                 <div className="overflow-hidden">
-                  <strong className="block text-[11.5px] font-semibold truncate text-[var(--text-heading)]">{currentUser.name}</strong>
+                  <strong className="block text-[11.5px] font-semibold truncate text-[var(--text-heading)] group-hover:text-cyan-400 transition-colors">{currentUser.name}</strong>
                   <small className="text-[10px] text-cyan-400 font-semibold block truncate">{currentUser.role}</small>
                 </div>
               </div>
@@ -1490,6 +1603,188 @@ export default function DashboardPage() {
                   >
                     <Check className="w-3.5 h-3.5" />
                     {editingUserEmail ? "Save Changes" : "Create Account"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Profile Management Modal */}
+        {profileModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="glass-card p-6 w-full max-w-lg border border-cyan-500/40 shadow-2xl relative animate-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-card)]">
+                <div className="flex items-center gap-3">
+                  <div className={`w-10 h-10 rounded-full ${profileForm.avatarColor} flex items-center justify-center text-white font-bold text-base shadow-md`}>
+                    {profileForm.name ? profileForm.name.charAt(0) : "A"}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-base font-outfit text-[var(--text-heading)]">My Profile & Account Settings</h3>
+                    <span className="text-[10px] text-cyan-400 font-semibold block">Manage Administrator Credentials & Identity</span>
+                  </div>
+                </div>
+                <button onClick={() => setProfileModalOpen(false)} className="p-1 hover:bg-white/10 rounded-lg text-[var(--text-muted)] hover:text-white transition-colors cursor-pointer">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {profileSuccessMsg && (
+                <div className="mb-4 p-3 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0 text-emerald-400" />
+                  <span>{profileSuccessMsg}</span>
+                </div>
+              )}
+
+              {profileErrorMsg && (
+                <div className="mb-4 p-3 rounded-xl bg-rose-500/15 border border-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 flex-shrink-0 text-rose-400" />
+                  <span>{profileErrorMsg}</span>
+                </div>
+              )}
+
+              <form onSubmit={handleSaveProfile} className="space-y-4 text-xs">
+                {/* Full Name */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-semibold mb-1 flex items-center gap-1.5">
+                    <Users className="w-3.5 h-3.5 text-cyan-400" /> Full Name
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={profileForm.name}
+                    onChange={(e) => setProfileForm((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g. Dilshan Mindika"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-cyan-500 font-semibold"
+                  />
+                </div>
+
+                {/* Email Address */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-semibold mb-1 flex items-center gap-1.5">
+                    <Mail className="w-3.5 h-3.5 text-cyan-400" /> Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={profileForm.email}
+                    onChange={(e) => setProfileForm((prev) => ({ ...prev, email: e.target.value }))}
+                    placeholder="e.g. admin@apex.com"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-cyan-500 font-mono"
+                  />
+                </div>
+
+                {/* Role / Designation */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-semibold mb-1 flex items-center gap-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-indigo-400" /> Role & IT Designation
+                  </label>
+                  <select
+                    value={profileForm.role}
+                    onChange={(e) => setProfileForm((prev) => ({ ...prev, role: e.target.value }))}
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
+                  >
+                    <option value="Lead IT Administrator" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>Lead IT Administrator</option>
+                    <option value="System Administrator" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>System Administrator</option>
+                    <option value="Security Operations" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>Security Operations</option>
+                    <option value="IT Fleet Manager" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>IT Fleet Manager</option>
+                    <option value="IT Helpdesk Specialist" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>IT Helpdesk Specialist</option>
+                  </select>
+                </div>
+
+                {/* Password Fields with Eye Show/Hide Toggle */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  <div>
+                    <label className="block text-[var(--text-secondary)] font-semibold mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-emerald-400" /> New Password</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={profileShowPassword ? "text" : "password"}
+                        required
+                        value={profileForm.password}
+                        onChange={(e) => setProfileForm((prev) => ({ ...prev, password: e.target.value }))}
+                        placeholder="••••••••"
+                        className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl pl-3.5 pr-10 py-2.5 text-xs focus:outline-none focus:border-emerald-500 font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setProfileShowPassword(!profileShowPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-cyan-400 transition-colors p-1 cursor-pointer"
+                        title={profileShowPassword ? "Hide Password" : "Show Password"}
+                      >
+                        {profileShowPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[var(--text-secondary)] font-semibold mb-1 flex items-center justify-between">
+                      <span className="flex items-center gap-1.5"><Lock className="w-3.5 h-3.5 text-emerald-400" /> Confirm Password</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={profileShowConfirmPassword ? "text" : "password"}
+                        required
+                        value={profileForm.confirmPassword}
+                        onChange={(e) => setProfileForm((prev) => ({ ...prev, confirmPassword: e.target.value }))}
+                        placeholder="••••••••"
+                        className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl pl-3.5 pr-10 py-2.5 text-xs focus:outline-none focus:border-emerald-500 font-mono"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setProfileShowConfirmPassword(!profileShowConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-muted)] hover:text-cyan-400 transition-colors p-1 cursor-pointer"
+                        title={profileShowConfirmPassword ? "Hide Password" : "Show Password"}
+                      >
+                        {profileShowConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Avatar Color Theme Selector */}
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-semibold mb-1.5">Avatar Color Theme</label>
+                  <div className="flex items-center gap-3">
+                    {[
+                      { color: "bg-blue-600", label: "Blue" },
+                      { color: "bg-indigo-600", label: "Indigo" },
+                      { color: "bg-emerald-600", label: "Emerald" },
+                      { color: "bg-amber-600", label: "Amber" },
+                      { color: "bg-rose-600", label: "Rose" },
+                      { color: "bg-purple-600", label: "Purple" },
+                      { color: "bg-cyan-600", label: "Cyan" },
+                    ].map((c) => (
+                      <button
+                        key={c.color}
+                        type="button"
+                        onClick={() => setProfileForm((prev) => ({ ...prev, avatarColor: c.color }))}
+                        className={`w-7 h-7 rounded-full ${c.color} flex items-center justify-center text-white transition-transform cursor-pointer ${
+                          profileForm.avatarColor === c.color ? "ring-2 ring-cyan-400 scale-110 shadow-lg" : "opacity-70 hover:opacity-100"
+                        }`}
+                      >
+                        {profileForm.avatarColor === c.color && <Check className="w-3.5 h-3.5" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Buttons */}
+                <div className="flex justify-end gap-2 pt-4 border-t border-[var(--border-card)]">
+                  <button
+                    type="button"
+                    onClick={() => setProfileModalOpen(false)}
+                    className="px-4 py-2.5 rounded-xl text-xs font-semibold bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2.5 rounded-xl text-xs font-semibold bg-gradient-to-r from-blue-600 via-indigo-600 to-cyan-600 text-white shadow-lg shadow-blue-600/30 flex items-center gap-2 hover:from-blue-500 hover:to-cyan-500 transition-all cursor-pointer"
+                  >
+                    <Check className="w-4 h-4" />
+                    <span>Save Profile Changes</span>
                   </button>
                 </div>
               </form>
