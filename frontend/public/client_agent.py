@@ -29,13 +29,26 @@ except ImportError:
 
 
 def get_device_info():
+    ip_addr = "127.0.0.1"
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip_addr = s.getsockname()[0]
+        s.close()
+    except Exception:
+        try:
+            ip_addr = socket.gethostbyname(socket.gethostname())
+        except Exception:
+            ip_addr = "127.0.0.1"
+
     info = {
         "device_name": socket.gethostname(),
         "os_name": platform.system(),
         "os_version": platform.version(),
         "manufacturer": "Dell / Lenovo / HP",
         "device_model": "Enterprise Laptop",
-        "serial_number": "N/A"
+        "serial_number": "N/A",
+        "ip_address": ip_addr
     }
     if wmi:
         try:

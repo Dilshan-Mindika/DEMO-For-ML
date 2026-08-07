@@ -65,6 +65,7 @@ interface TelemetryData {
   os_version: string;
   manufacturer: string;
   serial_number: string;
+  ip_address?: string;
   cpu_usage: number;
   ram_usage: number;
   disk_usage: number;
@@ -384,7 +385,7 @@ export default function DashboardPage() {
   // Firestore Database Records State & Pagination Controls
   const [firestoreHistory, setFirestoreHistory] = useState<TelemetryHistoryRecord[]>([]);
   const [firestoreMaintenanceLogs, setFirestoreMaintenanceLogs] = useState<MaintenanceLogRecord[]>([]);
-  const [_firestoreDevices, setFirestoreDevices] = useState<FirestoreDeviceRecord[]>([]);
+  const [firestoreDevices, setFirestoreDevices] = useState<FirestoreDeviceRecord[]>([]);
   const [loadingFirestore, setLoadingFirestore] = useState<boolean>(false);
 
   // Table Pagination States
@@ -1001,24 +1002,48 @@ export default function DashboardPage() {
     return `Cloud Machine (${id.slice(0, 10)})`;
   };
 
-  const allDropdownOptions = [
-    {
-      id: "local",
-      hostname: telemetry?.device_name && !telemetry.device_name.startsWith("169.254.") ? telemetry.device_name : "This Laptop",
-      model: telemetry?.device_model || "Enterprise Laptop",
-      status: prediction?.status_level || "healthy",
-      edhi: mlInput?.edhi || 85,
-    },
-    ...devicesList
-      .filter((d) => d.device_id !== "local")
-      .map((d) => ({
+  // Combine devices from REST API (/api/devices) and Firebase Firestore (devices collection)
+  const combinedDeviceMap = new Map<string, { id: string; hostname: string; model: string; status: string; edhi: number; ip: string }>();
+
+  // 1. Local Machine
+  combinedDeviceMap.set("local", {
+    id: "local",
+    hostname: telemetry?.device_name && !telemetry.device_name.startsWith("169.254.") ? telemetry.device_name : "This Laptop",
+    model: telemetry?.device_model || "Enterprise Laptop",
+    status: prediction?.status_level || "healthy",
+    edhi: mlInput?.edhi || 85,
+    ip: telemetry?.ip_address || "127.0.0.1"
+  });
+
+  // 2. Devices from REST API (/api/devices)
+  devicesList.forEach((d: any) => {
+    if (d.device_id && d.device_id !== "local") {
+      combinedDeviceMap.set(d.device_id, {
         id: d.device_id,
-        hostname: d.device_name && !d.device_name.startsWith("169.254.") ? d.device_name : `Session ${d.device_id.slice(0, 8)}`,
-        model: d.device_model || "Cloud Laptop",
+        hostname: d.device_name && !d.device_name.startsWith("169.254.") ? d.device_name : `Device ${d.device_id.slice(0, 8)}`,
+        model: d.device_model || "Enterprise Laptop",
         status: d.status_level || "healthy",
         edhi: d.edhi || 85,
-      })),
-  ];
+        ip: d.ip_address || d.telemetry?.ip_address || "Remote Host"
+      });
+    }
+  });
+
+  // 3. Devices from Firebase Firestore (devices collection)
+  firestoreDevices.forEach((d: any) => {
+    if (d.device_id && d.device_id !== "local" && !combinedDeviceMap.has(d.device_id)) {
+      combinedDeviceMap.set(d.device_id, {
+        id: d.device_id,
+        hostname: d.device_name || `Remote ${d.device_id.slice(0, 8)}`,
+        model: d.device_model || "Enterprise Laptop",
+        status: d.status_level || "healthy",
+        edhi: d.edhi || 85,
+        ip: d.ip_address || "Remote Host"
+      });
+    }
+  });
+
+  const allDropdownOptions = Array.from(combinedDeviceMap.values());
 
   const filteredDropdownOptions = allDropdownOptions.filter((item) => {
     const q = deviceSearchQuery.toLowerCase();
@@ -1479,7 +1504,7 @@ export default function DashboardPage() {
                                 )}
                               </div>
                               <span className="text-[10px] text-[var(--text-secondary)] block truncate">
-                                {option.hostname} • {option.model}
+                                {option.hostname} • {option.ip ? `IP: ${option.ip}` : option.model}
                               </span>
                             </div>
                           </div>

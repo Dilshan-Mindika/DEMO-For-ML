@@ -83,6 +83,7 @@ class FleetManager:
             "os_name": telemetry.os_name,
             "os_version": telemetry.os_version,
             "serial_number": telemetry.serial_number,
+            "ip_address": getattr(telemetry, "ip_address", "127.0.0.1"),
             "last_seen": datetime.now().isoformat(),
             "telemetry": telemetry.to_dict(),
             "prediction": prediction.to_dict()
@@ -107,6 +108,7 @@ class FleetManager:
                     "device_model": record["device_model"],
                     "manufacturer": record["manufacturer"],
                     "serial_number": record["serial_number"],
+                    "ip_address": record.get("ip_address") or record.get("telemetry", {}).get("ip_address") or "127.0.0.1",
                     "last_seen": record["last_seen"],
                     "rul_months": pred["rul_months"],
                     "recommendation": pred["recommendation"],
