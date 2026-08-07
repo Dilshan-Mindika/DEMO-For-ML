@@ -855,12 +855,12 @@ export default function DashboardPage() {
     });
   }
 
-  if (telemetry?.cpu_usage && telemetry.cpu_usage > 85) {
+  if (telemetry?.cpu_usage && telemetry.cpu_usage > 92) {
     alertsList.push({
       id: "cpu_overload",
       type: "warning",
-      title: "High Processor Workload",
-      message: `Processor usage is heavy (${telemetry.cpu_usage.toFixed(1)}%). Close unnecessary apps to speed up your laptop.`,
+      title: "High Multi-Core Processor Workload",
+      message: `Total processor usage across all CPU cores is heavy (${telemetry.cpu_usage.toFixed(1)}%). Close unnecessary apps to speed up your laptop.`,
     });
   }
 

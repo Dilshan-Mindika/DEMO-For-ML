@@ -118,7 +118,13 @@ class HardwareCollector:
     def get_basic_metrics(self) -> Dict[str, Any]:
         """Collects 100% real-time live CPU, RAM, Disk, and Battery metrics matching Task Manager."""
         try:
-            cpu_usage = psutil.cpu_percent(interval=0.05)
+            # Sample all logical CPU cores (P-Cores + E-Cores) over 0.1s and average across all cores
+            # to measure total multi-core CPU load matching Windows Task Manager
+            per_core = psutil.cpu_percent(interval=0.1, percpu=True)
+            if per_core and len(per_core) > 0:
+                cpu_usage = round(sum(per_core) / len(per_core), 1)
+            else:
+                cpu_usage = round(psutil.cpu_percent(interval=0.1), 1)
         except Exception:
             cpu_usage = 25.0
 

@@ -56,7 +56,8 @@ def get_device_info():
 
 def get_basic_metrics():
     try:
-        cpu = psutil.cpu_percent(interval=1)
+        per_core = psutil.cpu_percent(interval=0.2, percpu=True)
+        cpu = round(sum(per_core) / len(per_core), 1) if per_core else 20.0
         ram = psutil.virtual_memory().percent
         disk = psutil.disk_usage("C:\\").percent
         bat = psutil.sensors_battery()
