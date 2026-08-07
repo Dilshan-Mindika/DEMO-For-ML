@@ -27,7 +27,7 @@ def build_exe():
         "-m",
         "PyInstaller",
         "--noconfirm",
-        "--onedir",
+        "--onefile",
         "--windowed",
         "--name=ApexPulseAgent",
         f"--distpath={output_dir}",

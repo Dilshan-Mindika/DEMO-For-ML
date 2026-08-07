@@ -30,8 +30,13 @@ IF NOT EXIST "%TARGET_DIR%" (
     mkdir "%TARGET_DIR%"
 )
 
-:: 3. Copy Client Agent Script
-copy /Y "%~dp0client_agent.py" "%TARGET_DIR%\client_agent.py" >nul
+:: 3. Copy or Download Client Agent Script
+IF EXIST "%~dp0client_agent.py" (
+    copy /Y "%~dp0client_agent.py" "%TARGET_DIR%\client_agent.py" >nul
+) ELSE (
+    echo [+] Downloading latest telemetry agent script from central server...
+    powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://apex-ml.vercel.app/downloads/client_agent.py' -OutFile '%TARGET_DIR%\client_agent.py'" >nul 2>&1
+)
 echo [+] Agent script installed to: %TARGET_DIR%\client_agent.py
 
 :: 4. Set Server URL (Use argument %1 if provided, else environment variable or fallback)

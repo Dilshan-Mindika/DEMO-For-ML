@@ -159,7 +159,7 @@ def predict_rul():
         }), 500
 
 
-@app.route("/api/devices/telemetry", methods=["POST"])
+@app.route("/api/devices/telemetry", methods=["GET", "POST", "OPTIONS"])
 def receive_client_telemetry():
     """API endpoint for remote client agents running on enterprise laptops."""
     try:

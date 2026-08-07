@@ -133,7 +133,7 @@
     "os_name": "Windows",
     "os_version": "10.0.26200",
     "serial_number": "BY2041A90301323",
-    "last_seen": "2026-08-08T02:48:52.016007",
+    "last_seen": "2026-08-08T02:58:33.926357",
     "telemetry": {
       "device_name": "DESKTOP-K6S3QF9",
       "device_model": "Blade 15 Base Model (Early 2020) - RZ09-0328",
@@ -141,34 +141,38 @@
       "os_version": "10.0.26200",
       "manufacturer": "Razer",
       "serial_number": "BY2041A90301323",
-      "cpu_usage": 28.8,
-      "ram_usage": 54.7,
+      "cpu_usage": 30.3,
+      "ram_usage": 53.3,
       "disk_usage": 59.1,
       "battery_percent": 100,
       "power_plugged": true,
-      "design_capacity_mwh": null,
-      "full_charge_capacity_mwh": null,
-      "battery_health": 100.0,
-      "battery_wear": 0.0,
-      "battery_cycles": 150,
-      "temperature_current": 48.1,
-      "temperature_avg": 46.1,
+      "design_capacity_mwh": 65003,
+      "full_charge_capacity_mwh": 52637,
+      "battery_health": 80.98,
+      "battery_wear": 19.02,
+      "battery_cycles": 2,
+      "temperature_current": 49.8,
+      "temperature_avg": 49.8,
       "disk_health_status": [
         {
-          "FriendlyName": "PhysicalDisk0",
+          "FriendlyName": "PC SN530 NVMe WDC 512GB",
+          "HealthStatus": "Healthy"
+        },
+        {
+          "FriendlyName": "WDC WDS100T2B0C-00PXH0",
           "HealthStatus": "Healthy"
         }
       ],
       "ssd_health_percent": 100.0,
       "ram_modules": [
         {
-          "bank": "ChannelA-DIMM0",
+          "bank": "BANK 0",
           "capacity_gb": 16.0,
           "speed_mhz": 2933,
           "manufacturer": "Samsung"
         },
         {
-          "bank": "ChannelB-DIMM0",
+          "bank": "BANK 2",
           "capacity_gb": 16.0,
           "speed_mhz": 2933,
           "manufacturer": "04CB"
@@ -176,27 +180,27 @@
       ],
       "storage_drives": [
         {
-          "name": "WDC WDS100T2B0C-00PXH0",
-          "size_gb": 931.5,
-          "media_type": "Fixed hard disk media",
+          "name": "PC SN530 NVMe WDC 512GB",
+          "media_type": "SSD",
+          "size_gb": 476.9,
           "health_status": "Healthy",
-          "health_percent": 100
+          "health_percent": 100.0
         },
         {
-          "name": "PC SN530 NVMe WDC 512GB",
-          "size_gb": 476.9,
-          "media_type": "SSD (NVMe)",
+          "name": "WDC WDS100T2B0C-00PXH0",
+          "media_type": "SSD",
+          "size_gb": 931.5,
           "health_status": "Healthy",
-          "health_percent": 100
+          "health_percent": 100.0
         }
       ],
       "cpu_details": null,
-      "uptime_hours": 69.07,
+      "uptime_hours": 69.23,
       "shutdowns_30d": 0,
-      "timestamp": "2026-08-08T02:48:52.015306"
+      "timestamp": "2026-08-08T02:58:33.919239"
     },
     "prediction": {
-      "rul_months": 20.39,
+      "rul_months": 20.8,
       "recommendation": "Plan Replacement",
       "status_level": "plan_replacement",
       "status_color": "#F59E0B",
@@ -205,15 +209,15 @@
         "usage_profile": "Normal",
         "age": 24.0,
         "usage_hours": 4680.0,
-        "battery_cycles": 150,
-        "battery_health": 100.0,
+        "battery_cycles": 2,
+        "battery_health": 80.98,
         "ssd_health": 100.0,
-        "temperature": 46.1,
-        "performance_score": 66.08,
+        "temperature": 49.8,
+        "performance_score": 66.06,
         "shutdown_count": 0,
-        "edhi": 94.91
+        "edhi": 90.15
       },
-      "timestamp": "2026-08-08T02:48:52.015959"
+      "timestamp": "2026-08-08T02:58:33.926344"
     }
   }
 }
