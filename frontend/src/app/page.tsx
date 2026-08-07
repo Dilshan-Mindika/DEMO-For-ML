@@ -15,6 +15,7 @@ import {
   EyeOff,
   Clock,
   Users,
+  UserPlus,
   ChevronDown,
   Mail,
   Lock,
@@ -33,11 +34,14 @@ import {
   TrendingUp,
   Server,
   CheckCircle,
-  Laptop,
   Pencil,
+  Trash2,
   Search,
   Check,
-  Tag
+  Tag,
+  ChevronLeft,
+  ChevronRight,
+  Plus
 } from "lucide-react";
 import { authenticateUserWithFirebase, UserAccount, HARDCODED_ADMIN_USERS } from "./auth";
 import {
@@ -174,6 +178,37 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<string>("telemetry");
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
+  // User Accounts CRUD State
+  const [usersList, setUsersList] = useState<(UserAccount & { password?: string })[]>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("apex_users_list");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          // fallback
+        }
+      }
+    }
+    return [
+      { email: "admin@apex.com", name: "Dilshan Mindika", role: "Lead IT Administrator", avatarColor: "bg-blue-600", password: "admin123" },
+      { email: "sysadmin@apex.com", name: "Kasun Perera", role: "System Administrator", avatarColor: "bg-indigo-600", password: "sysadmin123" },
+      { email: "security@apex.com", name: "Nuwan Fernando", role: "Security Operations", avatarColor: "bg-rose-600", password: "security123" },
+      { email: "manager@apex.com", name: "Chamari Silva", role: "IT Fleet Manager", avatarColor: "bg-amber-600", password: "manager123" },
+      { email: "support@apex.com", name: "Pathum Jayawardena", role: "IT Helpdesk Specialist", avatarColor: "bg-emerald-600", password: "support123" },
+    ];
+  });
+
+  const [userModalOpen, setUserModalOpen] = useState<boolean>(false);
+  const [editingUserEmail, setEditingUserEmail] = useState<string | null>(null);
+  const [userForm, setUserForm] = useState<{ email: string; name: string; role: string; avatarColor: string; password?: string }>({
+    email: "",
+    name: "",
+    role: "Lead IT Administrator",
+    avatarColor: "bg-blue-600",
+    password: "",
+  });
+
   // Authentication State
   const [currentUser, setCurrentUser] = useState<UserAccount | null>(() => {
     if (typeof window !== "undefined") {
@@ -252,11 +287,25 @@ export default function DashboardPage() {
   const [simBatHealth, setSimBatHealth] = useState<number>(85);
   const [simSSDHealth, setSimSSDHealth] = useState<number>(90);
 
-  // Firestore Database Records State
+  // Firestore Database Records State & Pagination Controls
   const [firestoreHistory, setFirestoreHistory] = useState<TelemetryHistoryRecord[]>([]);
   const [firestoreMaintenanceLogs, setFirestoreMaintenanceLogs] = useState<MaintenanceLogRecord[]>([]);
   const [_firestoreDevices, setFirestoreDevices] = useState<FirestoreDeviceRecord[]>([]);
   const [loadingFirestore, setLoadingFirestore] = useState<boolean>(false);
+
+  // Table Pagination States
+  const [historyPage, setHistoryPage] = useState<number>(1);
+  const [historyRowsPerPage, setHistoryRowsPerPage] = useState<number>(5);
+
+  const [maintenancePage, setMaintenancePage] = useState<number>(1);
+  const [maintenanceRowsPerPage, setMaintenanceRowsPerPage] = useState<number>(5);
+
+  // Save usersList to localStorage whenever it changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem("apex_users_list", JSON.stringify(usersList));
+    }
+  }, [usersList]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -271,6 +320,65 @@ export default function DashboardPage() {
 
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
+  };
+
+  // User Accounts CRUD Handlers
+  const handleOpenAddUserModal = () => {
+    setEditingUserEmail(null);
+    setUserForm({
+      email: "",
+      name: "",
+      role: "Lead IT Administrator",
+      avatarColor: "bg-blue-600",
+      password: "",
+    });
+    setUserModalOpen(true);
+  };
+
+  const handleOpenEditUserModal = (user: UserAccount & { password?: string }) => {
+    setEditingUserEmail(user.email);
+    setUserForm({
+      email: user.email,
+      name: user.name,
+      role: user.role,
+      avatarColor: user.avatarColor,
+      password: user.password || "",
+    });
+    setUserModalOpen(true);
+  };
+
+  const handleSaveUser = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userForm.email || !userForm.name) return;
+
+    if (editingUserEmail) {
+      // Edit User
+      setUsersList((prev) =>
+        prev.map((u) =>
+          u.email.toLowerCase() === editingUserEmail.toLowerCase()
+            ? { ...u, name: userForm.name, role: userForm.role, avatarColor: userForm.avatarColor, password: userForm.password }
+            : u
+        )
+      );
+    } else {
+      // Create User
+      const newUser = {
+        email: userForm.email.trim().toLowerCase(),
+        name: userForm.name.trim(),
+        role: userForm.role,
+        avatarColor: userForm.avatarColor,
+        password: userForm.password || "apex123",
+      };
+      setUsersList((prev) => [...prev, newUser]);
+    }
+
+    setUserModalOpen(false);
+  };
+
+  const handleDeleteUser = (email: string) => {
+    if (confirm(`Are you sure you want to delete administrator account ${email}?`)) {
+      setUsersList((prev) => prev.filter((u) => u.email.toLowerCase() !== email.toLowerCase()));
+    }
   };
 
   const handleSaveNickname = (deviceId: string) => {
@@ -295,6 +403,19 @@ export default function DashboardPage() {
     setAuthError(null);
     setLoading(true);
     try {
+      // First check dynamic usersList
+      const localMatch = usersList.find(
+        (u) => u.email.toLowerCase() === loginEmail.trim().toLowerCase() && u.password === loginPassword.trim()
+      );
+      if (localMatch) {
+        setCurrentUser(localMatch);
+        localStorage.setItem("apex_user", JSON.stringify(localMatch));
+        fetchPrediction(true);
+        setLoading(false);
+        return;
+      }
+
+      // Fallback to Firebase authentication
       const user = await authenticateUserWithFirebase(loginEmail, loginPassword);
       if (user) {
         setCurrentUser(user);
@@ -411,13 +532,15 @@ export default function DashboardPage() {
     setLoadingFirestore(true);
     try {
       const [hist, logs, devs] = await Promise.all([
-        fetchDeviceHistory(selectedDeviceId === "local" ? undefined : selectedDeviceId, 30),
-        fetchMaintenanceLogs(30),
+        fetchDeviceHistory(selectedDeviceId === "local" ? undefined : selectedDeviceId, 50),
+        fetchMaintenanceLogs(50),
         fetchFirestoreDevices()
       ]);
       setFirestoreHistory(hist);
       setFirestoreMaintenanceLogs(logs);
       setFirestoreDevices(devs);
+      setHistoryPage(1);
+      setMaintenancePage(1);
     } catch (err) {
       console.error("Database history load error:", err);
     } finally {
@@ -569,7 +692,6 @@ export default function DashboardPage() {
   if (!currentUser) {
     return (
       <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${isDarkMode ? "dark-mode" : "light-mode"} flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-300`}>
-        {/* Animated Futuristic Ambient Orbs */}
         <div className="absolute -top-32 -left-32 w-[30rem] h-[30rem] bg-cyan-500/20 rounded-full blur-[120px] pointer-events-none animate-orb-1" />
         <div className="absolute -bottom-32 -right-32 w-[32rem] h-[32rem] bg-blue-600/25 rounded-full blur-[130px] pointer-events-none animate-orb-2" />
         <div className="absolute top-1/3 right-1/4 w-[24rem] h-[24rem] bg-indigo-500/15 rounded-full blur-[100px] pointer-events-none animate-orb-3" />
@@ -774,9 +896,6 @@ export default function DashboardPage() {
     });
   }
 
-  const adminAccountsList = Object.values(HARDCODED_ADMIN_USERS).map((item) => item.user);
-
-  // Helper for displaying device label with custom nickname fallback
   const getDeviceDisplayName = (id: string, name?: string) => {
     if (deviceNicknames[id]) return deviceNicknames[id];
     if (name && !name.startsWith("169.254.")) return name;
@@ -784,7 +903,6 @@ export default function DashboardPage() {
     return `Cloud Machine (${id.slice(0, 10)})`;
   };
 
-  // Build combined device list for custom dropdown
   const allDropdownOptions = [
     {
       id: "local",
@@ -813,6 +931,21 @@ export default function DashboardPage() {
   });
 
   const selectedOptionInfo = allDropdownOptions.find((o) => o.id === selectedDeviceId) || allDropdownOptions[0];
+
+  // Paginated Database Records
+  const paginatedFirestoreHistory = firestoreHistory.slice(
+    (historyPage - 1) * historyRowsPerPage,
+    historyPage * historyRowsPerPage
+  );
+
+  const totalHistoryPages = Math.ceil(firestoreHistory.length / historyRowsPerPage) || 1;
+
+  const paginatedMaintenanceLogs = firestoreMaintenanceLogs.slice(
+    (maintenancePage - 1) * maintenanceRowsPerPage,
+    maintenancePage * maintenanceRowsPerPage
+  );
+
+  const totalMaintenancePages = Math.ceil(firestoreMaintenanceLogs.length / maintenanceRowsPerPage) || 1;
 
   return (
     <div className={`flex min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${isDarkMode ? "dark-mode" : "light-mode"} transition-colors duration-300 relative overflow-hidden`}>
@@ -859,6 +992,7 @@ export default function DashboardPage() {
             {[
               { id: "telemetry", label: "Overview & Life Forecast", icon: <Activity className="w-4 h-4" /> },
               { id: "firebase_history", label: "Device History & Audit Log", icon: <Database className="w-4 h-4 text-cyan-400" /> },
+              { id: "admin_users", label: "User Accounts & Management", icon: <UserPlus className="w-4 h-4 text-indigo-400" /> },
               { id: "cpu_ram", label: "Processor & Memory Speed", icon: <Cpu className="w-4 h-4" /> },
               { id: "thermal_logs", label: "Temperature & Crashes", icon: <Thermometer className="w-4 h-4" /> },
               { id: "battery", label: "Battery Life & Power", icon: <Battery className="w-4 h-4" /> },
@@ -962,6 +1096,18 @@ export default function DashboardPage() {
             >
               <Database className="w-4 h-4 text-cyan-400" />
               Device History & Audit Log
+            </button>
+
+            <button
+              onClick={() => setActiveTab("admin_users")}
+              className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+                activeTab === "admin_users"
+                  ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30"
+                  : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
+              }`}
+            >
+              <UserPlus className="w-4 h-4 text-indigo-400" />
+              User Accounts & Management
             </button>
 
             <button
@@ -1125,6 +1271,7 @@ export default function DashboardPage() {
             <h1 className="text-2xl md:text-3xl font-bold font-outfit text-[var(--text-heading)]">
               {activeTab === "telemetry" && "Laptop Overview & Life Forecast"}
               {activeTab === "firebase_history" && "Device Audit & History Database"}
+              {activeTab === "admin_users" && "User Accounts & Administrator Management"}
               {activeTab === "cpu_ram" && "Processor Speed & Memory Usage"}
               {activeTab === "thermal_logs" && "Laptop Temperature & Shutdown Records"}
               {activeTab === "battery" && "Battery Life & Capacity Health"}
@@ -1255,6 +1402,120 @@ export default function DashboardPage() {
             </button>
           </div>
         </header>
+
+        {/* Modal Popover for Add/Edit Admin User CRUD */}
+        {userModalOpen && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="glass-card p-6 w-full max-w-md border border-indigo-500/40 shadow-2xl relative animate-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-card)]">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-indigo-400" />
+                  <h3 className="font-bold text-base font-outfit text-[var(--text-heading)]">
+                    {editingUserEmail ? "Edit Administrator Account" : "Add New Administrator Account"}
+                  </h3>
+                </div>
+                <button onClick={() => setUserModalOpen(false)} className="p-1 hover:bg-white/10 rounded-lg text-[var(--text-muted)]">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleSaveUser} className="space-y-4 text-xs">
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-semibold mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={userForm.name}
+                    onChange={(e) => setUserForm((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="e.g. Saman Kumara"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-indigo-500 font-semibold"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-semibold mb-1">Email Address</label>
+                  <input
+                    type="email"
+                    required
+                    disabled={Boolean(editingUserEmail)}
+                    value={userForm.email}
+                    onChange={(e) => setUserForm((prev) => ({ ...prev, email: e.target.value }))}
+                    placeholder="e.g. saman@apex.com"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-indigo-500 disabled:opacity-50 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-semibold mb-1">Password</label>
+                  <input
+                    type="text"
+                    value={userForm.password || ""}
+                    onChange={(e) => setUserForm((prev) => ({ ...prev, password: e.target.value }))}
+                    placeholder="e.g. saman123"
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-indigo-500 font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-semibold mb-1">Role / Designation</label>
+                  <select
+                    value={userForm.role}
+                    onChange={(e) => setUserForm((prev) => ({ ...prev, role: e.target.value }))}
+                    className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl px-3.5 py-2.5 text-xs focus:outline-none focus:border-indigo-500 font-semibold cursor-pointer"
+                  >
+                    <option value="Lead IT Administrator" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>Lead IT Administrator</option>
+                    <option value="System Administrator" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>System Administrator</option>
+                    <option value="Security Operations" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>Security Operations</option>
+                    <option value="IT Fleet Manager" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>IT Fleet Manager</option>
+                    <option value="IT Helpdesk Specialist" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>IT Helpdesk Specialist</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-[var(--text-secondary)] font-semibold mb-1.5">Avatar Color Badge</label>
+                  <div className="flex items-center gap-3">
+                    {[
+                      { color: "bg-blue-600", label: "Blue" },
+                      { color: "bg-indigo-600", label: "Indigo" },
+                      { color: "bg-emerald-600", label: "Emerald" },
+                      { color: "bg-amber-600", label: "Amber" },
+                      { color: "bg-rose-600", label: "Rose" },
+                      { color: "bg-purple-600", label: "Purple" },
+                    ].map((c) => (
+                      <button
+                        key={c.color}
+                        type="button"
+                        onClick={() => setUserForm((prev) => ({ ...prev, avatarColor: c.color }))}
+                        className={`w-7 h-7 rounded-full ${c.color} flex items-center justify-center text-white transition-transform ${
+                          userForm.avatarColor === c.color ? "ring-2 ring-white scale-110" : "opacity-70 hover:opacity-100"
+                        }`}
+                      >
+                        {userForm.avatarColor === c.color && <Check className="w-3.5 h-3.5" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-4 border-t border-[var(--border-card)]">
+                  <button
+                    type="button"
+                    onClick={() => setUserModalOpen(false)}
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/30 flex items-center gap-1.5 hover:from-indigo-500 hover:to-purple-500"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    {editingUserEmail ? "Save Changes" : "Create Account"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {/* Modal Popover for Setting / Editing Device Nickname */}
         {editingNicknameDeviceId && (
@@ -1638,31 +1899,7 @@ export default function DashboardPage() {
         {/* TAB 2: DEVICE HISTORY & AUDIT LOG */}
         {activeTab === "firebase_history" && (
           <div className="space-y-6">
-            {/* Enterprise Admin Users */}
-            <section className="glass-card p-6">
-              <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <Users className="w-5 h-5 text-cyan-400" /> Enterprise Administrator Accounts
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {adminAccountsList.map((acc, idx) => (
-                  <div key={idx} className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)] flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-3">
-                      <div className={`w-9 h-9 rounded-full ${acc.avatarColor} text-white font-bold flex items-center justify-center`}>
-                        {acc.name.charAt(0)}
-                      </div>
-                      <div>
-                        <strong className="block text-[var(--text-heading)] font-bold">{acc.name}</strong>
-                        <span className="text-[10px] text-cyan-400 font-mono block">{acc.email}</span>
-                        <small className="text-[10px] text-[var(--text-secondary)]">{acc.role}</small>
-                      </div>
-                    </div>
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                  </div>
-                ))}
-              </div>
-            </section>
-
+            {/* Telemetry History Database Log with Paginated Table */}
             <section className="glass-card p-6">
               <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                 <div>
@@ -1677,7 +1914,7 @@ export default function DashboardPage() {
                 <button
                   onClick={loadFirestoreData}
                   disabled={loadingFirestore}
-                  className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/40 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm"
+                  className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/40 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm cursor-pointer"
                 >
                   <RotateCw className={`w-3.5 h-3.5 ${loadingFirestore ? "animate-spin" : ""}`} />
                   <span>Refresh Records</span>
@@ -1696,55 +1933,103 @@ export default function DashboardPage() {
                   <p className="mt-1">Telemetry automatically syncs during standard 5-second polling loop.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[var(--table-header-border)] text-[var(--text-secondary)]">
-                        <th className="py-3 px-4">Timestamp</th>
-                        <th className="py-3 px-4">Device Identity</th>
-                        <th className="py-3 px-4">CPU / RAM / Disk</th>
-                        <th className="py-3 px-4">Battery / SSD Health</th>
-                        <th className="py-3 px-4">Health Index (EDHI)</th>
-                        <th className="py-3 px-4">RUL Forecast</th>
-                        <th className="py-3 px-4">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--table-header-border)]">
-                      {firestoreHistory.map((rec, idx) => (
-                        <tr key={rec.id || idx} className="hover:bg-[var(--table-hover)] transition-colors">
-                          <td className="py-3 px-4 font-mono text-[var(--text-muted)]">
-                            {rec.timestamp ? new Date(rec.timestamp).toLocaleString() : "Just now"}
-                          </td>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">
-                            <span className="block font-bold">{getDeviceDisplayName(rec.device_id, rec.device_id)}</span>
-                            <span className="text-[10px] text-[var(--text-muted)] font-mono block">{rec.device_id}</span>
-                          </td>
-                          <td className="py-3 px-4 font-mono text-[var(--text-primary)]">
-                            {rec.cpu_usage?.toFixed(1)}% / {rec.ram_usage?.toFixed(1)}% / {rec.disk_usage?.toFixed(1)}%
-                          </td>
-                          <td className="py-3 px-4 font-mono">
-                            <span className="text-emerald-400 font-bold">{rec.battery_health?.toFixed(1)}% Bat</span> •{" "}
-                            <span className="text-cyan-400 font-bold">{rec.ssd_health?.toFixed(1)}% SSD</span>
-                          </td>
-                          <td className="py-3 px-4 font-bold text-cyan-400">
-                            {rec.edhi?.toFixed(1)} / 100
-                          </td>
-                          <td className="py-3 px-4 font-bold text-emerald-400">
-                            {rec.rul_months?.toFixed(1)} Months
-                          </td>
-                          <td className="py-3 px-4">
-                            <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-semibold text-[11px]">
-                              {rec.recommendation}
-                            </span>
-                          </td>
+                <div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-[var(--table-header-border)] text-[var(--text-secondary)]">
+                          <th className="py-3 px-4">Timestamp</th>
+                          <th className="py-3 px-4">Device Identity</th>
+                          <th className="py-3 px-4">CPU / RAM / Disk</th>
+                          <th className="py-3 px-4">Battery / SSD Health</th>
+                          <th className="py-3 px-4">Health Index (EDHI)</th>
+                          <th className="py-3 px-4">RUL Forecast</th>
+                          <th className="py-3 px-4">Status</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--table-header-border)]">
+                        {paginatedFirestoreHistory.map((rec, idx) => (
+                          <tr key={rec.id || idx} className="hover:bg-[var(--table-hover)] transition-colors">
+                            <td className="py-3 px-4 font-mono text-[var(--text-muted)]">
+                              {rec.timestamp ? new Date(rec.timestamp).toLocaleString() : "Just now"}
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">
+                              <span className="block font-bold">{getDeviceDisplayName(rec.device_id, rec.device_id)}</span>
+                              <span className="text-[10px] text-[var(--text-muted)] font-mono block">{rec.device_id}</span>
+                            </td>
+                            <td className="py-3 px-4 font-mono text-[var(--text-primary)]">
+                              {rec.cpu_usage?.toFixed(1)}% / {rec.ram_usage?.toFixed(1)}% / {rec.disk_usage?.toFixed(1)}%
+                            </td>
+                            <td className="py-3 px-4 font-mono">
+                              <span className="text-emerald-400 font-bold">{rec.battery_health?.toFixed(1)}% Bat</span> •{" "}
+                              <span className="text-cyan-400 font-bold">{rec.ssd_health?.toFixed(1)}% SSD</span>
+                            </td>
+                            <td className="py-3 px-4 font-bold text-cyan-400">
+                              {rec.edhi?.toFixed(1)} / 100
+                            </td>
+                            <td className="py-3 px-4 font-bold text-emerald-400">
+                              {rec.rul_months?.toFixed(1)} Months
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 px-2 py-0.5 rounded font-semibold text-[11px]">
+                                {rec.recommendation}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Telemetry History Table Pagination Bar */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 mt-4 border-t border-[var(--border-card)] text-xs">
+                    <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+                      <span>Rows per page:</span>
+                      <select
+                        value={historyRowsPerPage}
+                        onChange={(e) => {
+                          setHistoryRowsPerPage(Number(e.target.value));
+                          setHistoryPage(1);
+                        }}
+                        className="bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-heading)] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-cyan-500 cursor-pointer font-semibold"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                      </select>
+                      <span className="ml-2 font-mono text-[var(--text-muted)]">
+                        Showing {Math.min(firestoreHistory.length, (historyPage - 1) * historyRowsPerPage + 1)} - {Math.min(firestoreHistory.length, historyPage * historyRowsPerPage)} of {firestoreHistory.length} records
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setHistoryPage((p) => Math.max(1, p - 1))}
+                        disabled={historyPage === 1}
+                        className="p-1.5 rounded-lg bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--bg-card)] transition-colors cursor-pointer"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+
+                      <span className="px-3 py-1 font-semibold text-[var(--text-heading)] font-mono">
+                        Page {historyPage} of {totalHistoryPages}
+                      </span>
+
+                      <button
+                        onClick={() => setHistoryPage((p) => Math.min(totalHistoryPages, p + 1))}
+                        disabled={historyPage >= totalHistoryPages}
+                        className="p-1.5 rounded-lg bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--bg-card)] transition-colors cursor-pointer"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </section>
 
+            {/* Maintenance Audit Log with Paginated Table */}
             <section className="glass-card p-6">
               <h3 className="font-bold text-lg font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
                 <Wrench className="w-5 h-5 text-indigo-400" /> Maintenance Audit Log
@@ -1755,33 +2040,152 @@ export default function DashboardPage() {
                   <span>No maintenance actions recorded yet. Trigger a repair simulation in the "Fix & Upgrade Guide" tab to log events.</span>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-xs text-left border-collapse">
-                    <thead>
-                      <tr className="border-b border-[var(--table-header-border)] text-[var(--text-secondary)]">
-                        <th className="py-3 px-4">Time</th>
-                        <th className="py-3 px-4">Device ID</th>
-                        <th className="py-3 px-4">Action Applied</th>
-                        <th className="py-3 px-4">Post-Repair RUL</th>
-                        <th className="py-3 px-4">Updated EDHI</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-[var(--table-header-border)]">
-                      {firestoreMaintenanceLogs.map((log, idx) => (
-                        <tr key={log.id || idx} className="hover:bg-[var(--table-hover)] transition-colors">
-                          <td className="py-3 px-4 font-mono text-[var(--text-muted)]">
-                            {log.timestamp ? new Date(log.timestamp).toLocaleString() : "Recent"}
-                          </td>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">{getDeviceDisplayName(log.device_id, log.device_id)}</td>
-                          <td className="py-3 px-4 font-bold text-indigo-400 uppercase tracking-wider">{log.action.replace("_", " ")}</td>
-                          <td className="py-3 px-4 font-bold text-emerald-400">{log.rul_months?.toFixed(1)} Months</td>
-                          <td className="py-3 px-4 font-bold text-cyan-400">{log.edhi?.toFixed(1)}</td>
+                <div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="border-b border-[var(--table-header-border)] text-[var(--text-secondary)]">
+                          <th className="py-3 px-4">Time</th>
+                          <th className="py-3 px-4">Device Identity</th>
+                          <th className="py-3 px-4">Action Applied</th>
+                          <th className="py-3 px-4">Post-Repair RUL</th>
+                          <th className="py-3 px-4">Updated EDHI</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-[var(--table-header-border)]">
+                        {paginatedMaintenanceLogs.map((log, idx) => (
+                          <tr key={log.id || idx} className="hover:bg-[var(--table-hover)] transition-colors">
+                            <td className="py-3 px-4 font-mono text-[var(--text-muted)]">
+                              {log.timestamp ? new Date(log.timestamp).toLocaleString() : "Recent"}
+                            </td>
+                            <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">{getDeviceDisplayName(log.device_id, log.device_id)}</td>
+                            <td className="py-3 px-4 font-bold text-indigo-400 uppercase tracking-wider">{log.action.replace("_", " ")}</td>
+                            <td className="py-3 px-4 font-bold text-emerald-400">{log.rul_months?.toFixed(1)} Months</td>
+                            <td className="py-3 px-4 font-bold text-cyan-400">{log.edhi?.toFixed(1)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Maintenance Audit Table Pagination Bar */}
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-4 mt-4 border-t border-[var(--border-card)] text-xs">
+                    <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+                      <span>Rows per page:</span>
+                      <select
+                        value={maintenanceRowsPerPage}
+                        onChange={(e) => {
+                          setMaintenanceRowsPerPage(Number(e.target.value));
+                          setMaintenancePage(1);
+                        }}
+                        className="bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-heading)] rounded-lg px-2.5 py-1 text-xs focus:outline-none focus:border-cyan-500 cursor-pointer font-semibold"
+                      >
+                        <option value={5}>5</option>
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                      </select>
+                      <span className="ml-2 font-mono text-[var(--text-muted)]">
+                        Showing {Math.min(firestoreMaintenanceLogs.length, (maintenancePage - 1) * maintenanceRowsPerPage + 1)} - {Math.min(firestoreMaintenanceLogs.length, maintenancePage * maintenanceRowsPerPage)} of {firestoreMaintenanceLogs.length} records
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => setMaintenancePage((p) => Math.max(1, p - 1))}
+                        disabled={maintenancePage === 1}
+                        className="p-1.5 rounded-lg bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--bg-card)] transition-colors cursor-pointer"
+                      >
+                        <ChevronLeft className="w-4 h-4" />
+                      </button>
+
+                      <span className="px-3 py-1 font-semibold text-[var(--text-heading)] font-mono">
+                        Page {maintenancePage} of {totalMaintenancePages}
+                      </span>
+
+                      <button
+                        onClick={() => setMaintenancePage((p) => Math.min(totalMaintenancePages, p + 1))}
+                        disabled={maintenancePage >= totalMaintenancePages}
+                        className="p-1.5 rounded-lg bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] disabled:opacity-40 disabled:cursor-not-allowed hover:bg-[var(--bg-card)] transition-colors cursor-pointer"
+                      >
+                        <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
+            </section>
+          </div>
+        )}
+
+        {/* TAB: USER ACCOUNTS & MANAGEMENT (NEW TAB WITH FULL CRUD) */}
+        {activeTab === "admin_users" && (
+          <div className="space-y-6">
+            <section className="glass-card p-6">
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
+                <div>
+                  <h3 className="font-bold text-lg font-outfit text-[var(--text-heading)] flex items-center gap-2">
+                    <Users className="w-5 h-5 text-indigo-400" /> Enterprise User Accounts & Permissions
+                  </h3>
+                  <p className="text-xs text-[var(--text-secondary)] mt-1">
+                    Manage administrator credentials, roles, and permissions across the IT fleet.
+                  </p>
+                </div>
+
+                <button
+                  onClick={handleOpenAddUserModal}
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-lg shadow-indigo-500/30 transition-all active:scale-95 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 text-white" />
+                  <span>Add Administrator Account</span>
+                </button>
+              </div>
+
+              {/* Administrator Users Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {usersList.map((acc, idx) => (
+                  <div key={acc.email || idx} className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] flex flex-col justify-between space-y-4 hover:border-indigo-500/50 transition-colors shadow-sm">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className={`w-11 h-11 rounded-full ${acc.avatarColor || "bg-indigo-600"} text-white font-bold text-sm flex items-center justify-center shadow-md`}>
+                          {acc.name.charAt(0)}
+                        </div>
+                        <div>
+                          <strong className="block text-sm font-bold text-[var(--text-heading)]">{acc.name}</strong>
+                          <span className="text-xs text-indigo-400 font-semibold block">{acc.role}</span>
+                          <span className="text-[11px] text-[var(--text-muted)] font-mono block mt-0.5">{acc.email}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => handleOpenEditUserModal(acc)}
+                          title="Edit User Account"
+                          className="p-1.5 hover:bg-indigo-500/20 text-indigo-400 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Pencil className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteUser(acc.email)}
+                          title="Delete User Account"
+                          className="p-1.5 hover:bg-rose-500/20 text-rose-400 rounded-lg transition-colors cursor-pointer"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="pt-3 border-t border-[var(--border-card)] flex items-center justify-between text-[11px]">
+                      <span className="text-[var(--text-secondary)] flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" /> Active Credentials
+                      </span>
+                      <span className="font-mono text-[var(--text-muted)]">Pass: {acc.password ? "••••••••" : "Default"}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
             </section>
           </div>
         )}
