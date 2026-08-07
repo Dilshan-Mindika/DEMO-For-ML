@@ -70,7 +70,7 @@
     "os_name": "Windows",
     "os_version": "10.0.26200",
     "serial_number": "N/A",
-    "last_seen": "2026-08-08T01:27:24.613150",
+    "last_seen": "2026-08-08T01:32:12.524934",
     "telemetry": {
       "device_name": "DESKTOP-K6S3QF9",
       "device_model": "Standard Laptop",
@@ -78,8 +78,8 @@
       "os_version": "10.0.26200",
       "manufacturer": "Unknown",
       "serial_number": "N/A",
-      "cpu_usage": 21.4,
-      "ram_usage": 51.0,
+      "cpu_usage": 25.0,
+      "ram_usage": 51.4,
       "disk_usage": 59.2,
       "battery_percent": 100,
       "power_plugged": true,
@@ -100,9 +100,9 @@
       "ram_modules": null,
       "storage_drives": null,
       "cpu_details": null,
-      "uptime_hours": 67.71,
+      "uptime_hours": 67.79,
       "shutdowns_30d": 0,
-      "timestamp": "2026-08-08T01:27:24.612901"
+      "timestamp": "2026-08-08T01:32:12.524411"
     },
     "prediction": {
       "rul_months": 21.14,
@@ -118,102 +118,11 @@
         "battery_health": 88.06,
         "ssd_health": 100.0,
         "temperature": 45.0,
-        "performance_score": 69.4,
+        "performance_score": 68.2,
         "shutdown_count": 0,
-        "edhi": 92.42
+        "edhi": 92.25
       },
-      "timestamp": "2026-08-08T01:27:24.613143"
-    }
-  },
-  "desktop-k6s3qf9-by2041a90301323": {
-    "device_id": "desktop-k6s3qf9-by2041a90301323",
-    "device_name": "DESKTOP-K6S3QF9",
-    "device_model": "Blade 15 Base Model (Early 2020) - RZ09-0328",
-    "manufacturer": "Razer",
-    "os_name": "Windows",
-    "os_version": "10.0.26200",
-    "serial_number": "BY2041A90301323",
-    "last_seen": "2026-08-08T01:28:04.704013",
-    "telemetry": {
-      "device_name": "DESKTOP-K6S3QF9",
-      "device_model": "Blade 15 Base Model (Early 2020) - RZ09-0328",
-      "os_name": "Windows",
-      "os_version": "10.0.26200",
-      "manufacturer": "Razer",
-      "serial_number": "BY2041A90301323",
-      "cpu_usage": 22.2,
-      "ram_usage": 51.1,
-      "disk_usage": 59.2,
-      "battery_percent": 100,
-      "power_plugged": true,
-      "design_capacity_mwh": 65003,
-      "full_charge_capacity_mwh": 57242,
-      "battery_health": 88.06,
-      "battery_wear": 11.94,
-      "battery_cycles": 2,
-      "temperature_current": 45.8,
-      "temperature_avg": 43.8,
-      "disk_health_status": [
-        {
-          "FriendlyName": "PhysicalDisk0",
-          "HealthStatus": "Healthy"
-        }
-      ],
-      "ssd_health_percent": 100.0,
-      "ram_modules": [
-        {
-          "bank": "ChannelA-DIMM0",
-          "capacity_gb": 16.0,
-          "speed_mhz": 2933,
-          "manufacturer": "Samsung"
-        },
-        {
-          "bank": "ChannelB-DIMM0",
-          "capacity_gb": 16.0,
-          "speed_mhz": 2933,
-          "manufacturer": "04CB"
-        }
-      ],
-      "storage_drives": [
-        {
-          "name": "WDC WDS100T2B0C-00PXH0",
-          "size_gb": 931.5,
-          "media_type": "Fixed hard disk media",
-          "health_status": "Healthy",
-          "health_percent": 100
-        },
-        {
-          "name": "PC SN530 NVMe WDC 512GB",
-          "size_gb": 476.9,
-          "media_type": "SSD (NVMe)",
-          "health_status": "Healthy",
-          "health_percent": 100
-        }
-      ],
-      "cpu_details": null,
-      "uptime_hours": 67.72,
-      "shutdowns_30d": 0,
-      "timestamp": "2026-08-08T01:28:04.703597"
-    },
-    "prediction": {
-      "rul_months": 20.83,
-      "recommendation": "Plan Replacement",
-      "status_level": "plan_replacement",
-      "status_color": "#F59E0B",
-      "ml_input": {
-        "device_model": "Blade 15 Base Model (Early 2020) - RZ09-0328",
-        "usage_profile": "Normal",
-        "age": 24.0,
-        "usage_hours": 4680.0,
-        "battery_cycles": 2,
-        "battery_health": 88.06,
-        "ssd_health": 100.0,
-        "temperature": 43.8,
-        "performance_score": 69.13,
-        "shutdown_count": 0,
-        "edhi": 92.38
-      },
-      "timestamp": "2026-08-08T01:28:04.703993"
+      "timestamp": "2026-08-08T01:32:12.524926"
     }
   }
 }

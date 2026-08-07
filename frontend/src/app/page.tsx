@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   Cpu,
   HardDrive,
@@ -33,7 +33,11 @@ import {
   TrendingUp,
   Server,
   CheckCircle,
-  Settings
+  Laptop,
+  Pencil,
+  Search,
+  Check,
+  Tag
 } from "lucide-react";
 import { authenticateUserWithFirebase, UserAccount, HARDCODED_ADMIN_USERS } from "./auth";
 import {
@@ -114,18 +118,6 @@ interface DeviceSummary {
   edhi: number;
 }
 
-interface FleetSummary {
-  total_devices: number;
-  healthy_count: number;
-  monitor_count: number;
-  replacement_count: number;
-  avg_rul_months: number;
-  avg_edhi: number;
-}
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://apex-ml-back.vercel.app";
-
-// Simple SVG Donut/Pie Chart Component
 const SimplePieChartCard = ({
   title,
   value,
@@ -178,7 +170,7 @@ export default function DashboardPage() {
   // Theme State (Dark by default)
   const [isDarkMode, setIsDarkMode] = useState<boolean>(true);
 
-  // Navigation State: 'telemetry' | 'firebase_history' | 'cpu_ram' | 'thermal_logs' | 'battery' | 'storage' | 'explainability' | 'maintenance'
+  // Navigation State
   const [activeTab, setActiveTab] = useState<string>("telemetry");
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
@@ -206,9 +198,7 @@ export default function DashboardPage() {
 
   // Dashboard Data State
   const [data, setData] = useState<{ telemetry: TelemetryData; prediction: PredictionResult } | null>(null);
-
   const [devicesList, setDevicesList] = useState<DeviceSummary[]>([]);
-
   const [loading, setLoading] = useState<boolean>(false);
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
   const [_error, setError] = useState<string | null>(null);
@@ -216,6 +206,32 @@ export default function DashboardPage() {
   const [manualAge, _setManualAge] = useState<number>(24);
   const [dailyUsage, _setDailyUsage] = useState<number>(6.5);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("local");
+
+  // Custom Glassmorphic Device Selector & Nickname State
+  const [deviceDropdownOpen, setDeviceDropdownOpen] = useState<boolean>(false);
+  const [deviceSearchQuery, setDeviceSearchQuery] = useState<string>("");
+  const [editingNicknameDeviceId, setEditingNicknameDeviceId] = useState<string | null>(null);
+  const [nicknameInput, setNicknameInput] = useState<string>("");
+
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  const [deviceNicknames, setDeviceNicknames] = useState<Record<string, string>>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("apex_device_nicknames");
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch {
+          return {};
+        }
+      }
+    }
+    return {
+      "local": "Dilshan's Main Workstation",
+      "DESKTOP-K6S3QF9": "Razer Blade 15 Pro",
+      "DESKTOP-F5B57DN": "Kasun's Dell XPS 9315"
+    };
+  });
 
   // Live Telemetry Rolling Sparkline Buffer State
   const [telemetryHistoryBuffer, setTelemetryHistoryBuffer] = useState<
@@ -242,8 +258,36 @@ export default function DashboardPage() {
   const [_firestoreDevices, setFirestoreDevices] = useState<FirestoreDeviceRecord[]>([]);
   const [loadingFirestore, setLoadingFirestore] = useState<boolean>(false);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDeviceDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode);
+  };
+
+  const handleSaveNickname = (deviceId: string) => {
+    const trimmed = nicknameInput.trim();
+    const updated = { ...deviceNicknames, [deviceId]: trimmed || deviceId };
+    setDeviceNicknames(updated);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("apex_device_nicknames", JSON.stringify(updated));
+    }
+    setEditingNicknameDeviceId(null);
+    setNicknameInput("");
+  };
+
+  const openNicknameModal = (deviceId: string, currentNickname: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingNicknameDeviceId(deviceId);
+    setNicknameInput(currentNickname);
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -389,6 +433,7 @@ export default function DashboardPage() {
 
   const selectDevice = async (deviceId: string) => {
     setSelectedDeviceId(deviceId);
+    setDeviceDropdownOpen(false);
     setLoading(true);
     setError(null);
     try {
@@ -531,7 +576,6 @@ export default function DashboardPage() {
 
         <div className="w-full max-w-md glass-card p-8 sm:p-10 relative z-10 border border-white/10 shadow-2xl">
           <div className="text-center mb-8">
-            {/* Clean Pulsing Logo without rigid square shell */}
             <div className="relative w-24 h-24 mx-auto mb-3 flex items-center justify-center">
               <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-2xl animate-pulse" />
               <img
@@ -644,7 +688,6 @@ export default function DashboardPage() {
   const telemetry = data?.telemetry;
   const mlInput = prediction?.ml_input;
 
-  // Simple human recommendation titles
   const getSimpleRecommendationText = (rec: string = "") => {
     if (rec.includes("Healthy") || rec.includes("Good")) return "Laptop in Good Condition";
     if (rec.includes("Monitor")) return "Keep an Eye on Performance";
@@ -732,6 +775,44 @@ export default function DashboardPage() {
   }
 
   const adminAccountsList = Object.values(HARDCODED_ADMIN_USERS).map((item) => item.user);
+
+  // Helper for displaying device label with custom nickname fallback
+  const getDeviceDisplayName = (id: string, name?: string) => {
+    if (deviceNicknames[id]) return deviceNicknames[id];
+    if (name && !name.startsWith("169.254.")) return name;
+    if (id === "local") return "This Laptop (Local Machine)";
+    return `Cloud Machine (${id.slice(0, 10)})`;
+  };
+
+  // Build combined device list for custom dropdown
+  const allDropdownOptions = [
+    {
+      id: "local",
+      hostname: telemetry?.device_name && !telemetry.device_name.startsWith("169.254.") ? telemetry.device_name : "This Laptop",
+      model: telemetry?.device_model || "Enterprise Laptop",
+      status: prediction?.status_level || "healthy",
+      edhi: mlInput?.edhi || 85,
+    },
+    ...devicesList
+      .filter((d) => d.device_id !== "local")
+      .map((d) => ({
+        id: d.device_id,
+        hostname: d.device_name && !d.device_name.startsWith("169.254.") ? d.device_name : `Session ${d.device_id.slice(0, 8)}`,
+        model: d.device_model || "Cloud Laptop",
+        status: d.status_level || "healthy",
+        edhi: d.edhi || 85,
+      })),
+  ];
+
+  const filteredDropdownOptions = allDropdownOptions.filter((item) => {
+    const q = deviceSearchQuery.toLowerCase();
+    const nickname = (deviceNicknames[item.id] || "").toLowerCase();
+    const host = item.hostname.toLowerCase();
+    const model = item.model.toLowerCase();
+    return nickname.includes(q) || host.includes(q) || model.includes(q);
+  });
+
+  const selectedOptionInfo = allDropdownOptions.find((o) => o.id === selectedDeviceId) || allDropdownOptions[0];
 
   return (
     <div className={`flex min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${isDarkMode ? "dark-mode" : "light-mode"} transition-colors duration-300 relative overflow-hidden`}>
@@ -1054,34 +1135,194 @@ export default function DashboardPage() {
           </div>
 
           <div className="flex items-center gap-3 flex-wrap">
-            <div className="relative">
-              <select
-                value={selectedDeviceId}
-                onChange={(e) => selectDevice(e.target.value)}
-                className="bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] px-4 py-2.5 rounded-full text-xs font-semibold focus:outline-none focus:border-cyan-500 appearance-none pr-8 cursor-pointer"
+            {/* Custom Glassmorphic Device Selector & Nicknaming Component */}
+            <div className="relative" ref={dropdownRef}>
+              <button
+                type="button"
+                onClick={() => setDeviceDropdownOpen(!deviceDropdownOpen)}
+                className="bg-[var(--bg-input)] hover:bg-[var(--bg-card)] border border-[var(--border-input)] hover:border-cyan-500/50 text-[var(--text-primary)] px-4 py-2 rounded-full text-xs font-semibold flex items-center gap-2.5 shadow-lg backdrop-blur-md transition-all active:scale-98 group cursor-pointer"
               >
-                <option value="local" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>
-                  This Laptop ({telemetry?.device_name && !telemetry.device_name.startsWith("169.254.") ? telemetry.device_name : "Web Preview"})
-                </option>
-                {devicesList.map((d) => (
-                  <option key={d.device_id} value={d.device_id} className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>
-                    {d.device_name && !d.device_name.startsWith("169.254.") ? d.device_name : `Cloud Session (${d.device_id.slice(0, 12)})`} ({d.device_model})
-                  </option>
-                ))}
-              </select>
-              <ChevronDown className="w-4 h-4 text-[var(--text-muted)] absolute right-3 top-3 pointer-events-none" />
+                <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse flex-shrink-0" />
+                <div className="flex items-center gap-1.5 max-w-[200px] truncate">
+                  <span className="font-bold text-[var(--text-heading)] truncate">
+                    {getDeviceDisplayName(selectedDeviceId, selectedOptionInfo.hostname)}
+                  </span>
+                  <span className="text-[10px] text-cyan-400 bg-cyan-500/10 border border-cyan-500/30 px-2 py-0.5 rounded-md font-mono hidden sm:inline-block truncate">
+                    {selectedOptionInfo.model}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={(e) => openNicknameModal(selectedDeviceId, getDeviceDisplayName(selectedDeviceId, selectedOptionInfo.hostname), e)}
+                  title="Edit Laptop Nickname"
+                  className="p-1 hover:bg-cyan-500/20 text-cyan-400 rounded-md opacity-70 group-hover:opacity-100 transition-opacity"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+                <ChevronDown className={`w-4 h-4 text-[var(--text-muted)] transition-transform duration-200 ${deviceDropdownOpen ? "rotate-180 text-cyan-400" : ""}`} />
+              </button>
+
+              {/* Glassmorphic Dropdown Popover Menu */}
+              {deviceDropdownOpen && (
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-[#0B132B]/95 dark:bg-[#090D16]/95 backdrop-blur-2xl p-4 shadow-2xl z-50 border border-cyan-500/40 animate-in fade-in slide-in-from-top-2 duration-150 rounded-2xl text-[var(--text-primary)]">
+                  {/* Dropdown Header & Search Filter */}
+                  <div className="flex items-center justify-between pb-2.5 mb-2.5 border-b border-[var(--border-card)]">
+                    <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1.5">
+                      Fleet Devices ({allDropdownOptions.length})
+                    </span>
+                    <span className="text-[10px] text-[var(--text-muted)]">Select or Edit Nickname</span>
+                  </div>
+
+                  <div className="relative mb-2">
+                    <Search className="w-3.5 h-3.5 text-[var(--text-muted)] absolute left-3 top-2.5" />
+                    <input
+                      type="text"
+                      value={deviceSearchQuery}
+                      onChange={(e) => setDeviceSearchQuery(e.target.value)}
+                      placeholder="Search device, hostname or nickname..."
+                      className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl pl-8 pr-3 py-1.5 text-xs focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  {/* Device List */}
+                  <div className="max-h-60 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
+                    {filteredDropdownOptions.map((option) => {
+                      const isSelected = option.id === selectedDeviceId;
+                      const displayName = getDeviceDisplayName(option.id, option.hostname);
+                      const hasNickname = Boolean(deviceNicknames[option.id]);
+
+                      return (
+                        <div
+                          key={option.id}
+                          onClick={() => selectDevice(option.id)}
+                          className={`w-full p-2.5 rounded-xl text-xs flex items-center justify-between gap-2 cursor-pointer transition-all ${
+                            isSelected
+                              ? "bg-cyan-500/20 border border-cyan-500/40 text-[var(--text-heading)] shadow-sm"
+                              : "hover:bg-[var(--bg-input)] text-[var(--text-primary)] border border-transparent"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2.5 overflow-hidden">
+                            <div
+                              className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                                option.status === "healthy"
+                                  ? "bg-emerald-400"
+                                  : option.status === "monitor"
+                                  ? "bg-amber-400"
+                                  : "bg-rose-400"
+                              }`}
+                            />
+                            <div className="overflow-hidden">
+                              <div className="flex items-center gap-1.5">
+                                <strong className="font-bold truncate text-[var(--text-heading)] block">{displayName}</strong>
+                                {hasNickname && (
+                                  <span className="text-[9px] text-cyan-400 bg-cyan-500/10 px-1.5 py-0.2 rounded font-mono">
+                                    Saved
+                                  </span>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-[var(--text-secondary)] block truncate">
+                                {option.hostname} • {option.model}
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => openNicknameModal(option.id, displayName, e)}
+                              title="Edit Nickname"
+                              className="p-1.5 hover:bg-cyan-500/20 text-cyan-400 rounded-lg opacity-70 hover:opacity-100 transition-opacity"
+                            >
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            {isSelected && <Check className="w-4 h-4 text-cyan-400" />}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
             </div>
 
             <button
               onClick={() => fetchPrediction(true)}
               disabled={loading}
-              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2.5 rounded-full text-xs flex items-center gap-2 shadow-lg shadow-blue-600/30 active:scale-95 transition-transform"
+              className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-4 py-2.5 rounded-full text-xs flex items-center gap-2 shadow-lg shadow-blue-600/30 active:scale-95 transition-transform cursor-pointer"
             >
               <RotateCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
               <span>Refresh Metrics</span>
             </button>
           </div>
         </header>
+
+        {/* Modal Popover for Setting / Editing Device Nickname */}
+        {editingNicknameDeviceId && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-md z-50 flex items-center justify-center p-4">
+            <div className="glass-card p-6 w-full max-w-md border border-cyan-500/30 shadow-2xl relative animate-in zoom-in-95 duration-150">
+              <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-card)]">
+                <div className="flex items-center gap-2">
+                  <Tag className="w-5 h-5 text-cyan-400" />
+                  <h3 className="font-bold text-base font-outfit text-[var(--text-heading)]">Assign Device Nickname</h3>
+                </div>
+                <button onClick={() => setEditingNicknameDeviceId(null)} className="p-1 hover:bg-white/10 rounded-lg text-[var(--text-muted)]">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              <p className="text-xs text-[var(--text-secondary)] mb-4">
+                Set a custom name for this laptop (e.g. "Dilshan's Work Station", "CEO Executive XPS"). This name will persist across sessions and reports.
+              </p>
+
+              <div className="mb-4">
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">Custom Laptop Nickname</label>
+                <input
+                  type="text"
+                  autoFocus
+                  value={nicknameInput}
+                  onChange={(e) => setNicknameInput(e.target.value)}
+                  placeholder="e.g. Dilshan's Main Laptop"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-500 font-semibold"
+                />
+              </div>
+
+              {/* Preset Nickname Quick Tags */}
+              <div className="mb-6">
+                <span className="text-[11px] font-semibold text-[var(--text-muted)] block mb-1.5">Quick Suggestions:</span>
+                <div className="flex flex-wrap gap-1.5">
+                  {["Work Machine", "Dev Laptop", "Executive Station", "Build Machine", "Fleet Laptop #1"].map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => setNicknameInput(preset)}
+                      className="bg-[var(--bg-input)] hover:bg-cyan-500/20 border border-[var(--border-input)] hover:border-cyan-500/40 text-[var(--text-secondary)] hover:text-cyan-400 text-[11px] px-2.5 py-1 rounded-lg font-medium transition-all"
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-[var(--border-card)]">
+                <button
+                  type="button"
+                  onClick={() => setEditingNicknameDeviceId(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleSaveNickname(editingNicknameDeviceId)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30 flex items-center gap-1.5 hover:from-cyan-500 hover:to-blue-500"
+                >
+                  <Check className="w-3.5 h-3.5" />
+                  Save Nickname
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Dynamic Alerts Banner */}
         <div className="space-y-3 mb-6">
@@ -1313,7 +1554,9 @@ export default function DashboardPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
                 <div className="bg-[var(--bg-input)] p-4 rounded-xl border border-[var(--border-input)] space-y-1">
                   <span className="text-[var(--text-secondary)] block font-semibold">Device Hostname</span>
-                  <strong className="font-mono text-sm text-[var(--text-heading)] block truncate">{telemetry?.device_name || "DESKTOP-LAPTOP"}</strong>
+                  <strong className="font-mono text-sm text-[var(--text-heading)] block truncate">
+                    {getDeviceDisplayName(selectedDeviceId, telemetry?.device_name)}
+                  </strong>
                   <span className="text-[10px] text-[var(--text-muted)] block font-mono">Serial: {telemetry?.serial_number || "N/A"}</span>
                 </div>
 
@@ -1458,7 +1701,7 @@ export default function DashboardPage() {
                     <thead>
                       <tr className="border-b border-[var(--table-header-border)] text-[var(--text-secondary)]">
                         <th className="py-3 px-4">Timestamp</th>
-                        <th className="py-3 px-4">Device ID</th>
+                        <th className="py-3 px-4">Device Identity</th>
                         <th className="py-3 px-4">CPU / RAM / Disk</th>
                         <th className="py-3 px-4">Battery / SSD Health</th>
                         <th className="py-3 px-4">Health Index (EDHI)</th>
@@ -1473,7 +1716,8 @@ export default function DashboardPage() {
                             {rec.timestamp ? new Date(rec.timestamp).toLocaleString() : "Just now"}
                           </td>
                           <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">
-                            {rec.device_id}
+                            <span className="block font-bold">{getDeviceDisplayName(rec.device_id, rec.device_id)}</span>
+                            <span className="text-[10px] text-[var(--text-muted)] font-mono block">{rec.device_id}</span>
                           </td>
                           <td className="py-3 px-4 font-mono text-[var(--text-primary)]">
                             {rec.cpu_usage?.toFixed(1)}% / {rec.ram_usage?.toFixed(1)}% / {rec.disk_usage?.toFixed(1)}%
@@ -1528,7 +1772,7 @@ export default function DashboardPage() {
                           <td className="py-3 px-4 font-mono text-[var(--text-muted)]">
                             {log.timestamp ? new Date(log.timestamp).toLocaleString() : "Recent"}
                           </td>
-                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">{log.device_id}</td>
+                          <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">{getDeviceDisplayName(log.device_id, log.device_id)}</td>
                           <td className="py-3 px-4 font-bold text-indigo-400 uppercase tracking-wider">{log.action.replace("_", " ")}</td>
                           <td className="py-3 px-4 font-bold text-emerald-400">{log.rul_months?.toFixed(1)} Months</td>
                           <td className="py-3 px-4 font-bold text-cyan-400">{log.edhi?.toFixed(1)}</td>
@@ -1885,7 +2129,7 @@ export default function DashboardPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
-                <button onClick={() => triggerMaintenance("replace_battery")} disabled={loading} className="bg-[var(--bg-input)] hover:bg-emerald-500/10 border border-[var(--border-input)] hover:border-emerald-500/40 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
+                <button onClick={() => triggerMaintenance("replace_battery")} disabled={loading} className="bg-[var(--bg-input)] hover:bg-emerald-500/10 border border-[var(--border-input)] hover:border-emerald-500/40 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group cursor-pointer">
                   <Battery className="w-8 h-8 text-emerald-500 group-hover:scale-110 transition-transform" />
                   <div>
                     <strong className="block text-sm text-[var(--text-heading)]">Replace Battery</strong>
@@ -1894,7 +2138,7 @@ export default function DashboardPage() {
                   </div>
                 </button>
 
-                <button onClick={() => triggerMaintenance("replace_ssd")} disabled={loading} className="bg-[var(--bg-input)] hover:bg-blue-500/10 border border-[var(--border-input)] hover:border-blue-500/40 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
+                <button onClick={() => triggerMaintenance("replace_ssd")} disabled={loading} className="bg-[var(--bg-input)] hover:bg-blue-500/10 border border-[var(--border-input)] hover:border-blue-500/40 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group cursor-pointer">
                   <HardDrive className="w-8 h-8 text-blue-500 group-hover:scale-110 transition-transform" />
                   <div>
                     <strong className="block text-sm text-[var(--text-heading)]">Replace Hard Drive</strong>
@@ -1903,7 +2147,7 @@ export default function DashboardPage() {
                   </div>
                 </button>
 
-                <button onClick={() => triggerMaintenance("full_overhaul")} disabled={loading} className="bg-gradient-to-br from-indigo-600/20 to-emerald-600/20 border border-indigo-500/40 hover:border-indigo-400 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group">
+                <button onClick={() => triggerMaintenance("full_overhaul")} disabled={loading} className="bg-gradient-to-br from-indigo-600/20 to-emerald-600/20 border border-indigo-500/40 hover:border-indigo-400 p-5 rounded-2xl text-left transition-all flex items-center gap-4 group cursor-pointer">
                   <Wrench className="w-8 h-8 text-indigo-500 dark:text-indigo-300 group-hover:scale-110 transition-transform" />
                   <div>
                     <strong className="block text-sm text-[var(--text-heading)]">Full Laptop Tune-up</strong>
