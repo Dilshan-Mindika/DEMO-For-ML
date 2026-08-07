@@ -28,7 +28,6 @@ import {
   BarChart3,
   X,
   Menu,
-  Flame,
   Database,
   CheckCircle2
 } from "lucide-react";
@@ -203,15 +202,15 @@ export default function DashboardPage() {
 
   // Dashboard Data State
   const [data, setData] = useState<{ telemetry: TelemetryData; prediction: PredictionResult } | null>(null);
-  const [fleetSummary, setFleetSummary] = useState<FleetSummary | null>(null);
+
   const [devicesList, setDevicesList] = useState<DeviceSummary[]>([]);
 
   const [loading, setLoading] = useState<boolean>(false);
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
-  const [error, setError] = useState<string | null>(null);
+  const [_error, setError] = useState<string | null>(null);
 
-  const [manualAge, setManualAge] = useState<number>(24);
-  const [dailyUsage, setDailyUsage] = useState<number>(6.5);
+  const [manualAge, _setManualAge] = useState<number>(24);
+  const [dailyUsage, _setDailyUsage] = useState<number>(6.5);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("local");
 
   // What-If Interactive Sensitivity State
@@ -223,7 +222,7 @@ export default function DashboardPage() {
   // Firestore Database Records State
   const [firestoreHistory, setFirestoreHistory] = useState<TelemetryHistoryRecord[]>([]);
   const [firestoreMaintenanceLogs, setFirestoreMaintenanceLogs] = useState<MaintenanceLogRecord[]>([]);
-  const [firestoreDevices, setFirestoreDevices] = useState<FirestoreDeviceRecord[]>([]);
+  const [_firestoreDevices, setFirestoreDevices] = useState<FirestoreDeviceRecord[]>([]);
   const [loadingFirestore, setLoadingFirestore] = useState<boolean>(false);
 
   const toggleTheme = () => {
@@ -260,7 +259,6 @@ export default function DashboardPage() {
       const res = await fetch(`${API_BASE_URL}/api/devices`);
       if (res.ok) {
         const json = await res.json();
-        setFleetSummary(json.summary);
         setDevicesList(json.devices);
       }
     } catch (_e) {
@@ -301,7 +299,7 @@ export default function DashboardPage() {
         setSimSSDHealth(ml.ssd_health);
       }
 
-      // Sync snapshot to Firebase Firestore DB in background
+      // Sync snapshot to database in background
       saveDeviceTelemetryHistory(selectedDeviceId, json.telemetry, json.prediction);
 
       fetchFleet();
@@ -326,7 +324,7 @@ export default function DashboardPage() {
       setFirestoreMaintenanceLogs(logs);
       setFirestoreDevices(devs);
     } catch (err) {
-      console.error("Firestore history load error:", err);
+      console.error("Database history load error:", err);
     } finally {
       setLoadingFirestore(false);
     }
@@ -376,7 +374,7 @@ export default function DashboardPage() {
         setData({ telemetry: json.telemetry, prediction: json.prediction });
         setLastUpdatedTime(new Date().toLocaleTimeString());
 
-        // Sync to Firebase Firestore DB
+        // Sync to database
         saveDeviceTelemetryHistory(deviceId, json.telemetry, json.prediction);
         syncDeviceToFirestore(json);
       }
@@ -415,7 +413,7 @@ export default function DashboardPage() {
           : null
       );
 
-      // Log maintenance action to Firebase Firestore DB
+      // Log maintenance action
       saveMaintenanceLog(selectedDeviceId, action, result.prediction);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Maintenance simulation error";
@@ -438,35 +436,43 @@ export default function DashboardPage() {
     return () => clearInterval(intervalId);
   }, [currentUser, fetchPrediction]);
 
-  // Render Login View if unauthenticated
+  // Render Futuristic Login View if unauthenticated
   if (!currentUser) {
     return (
       <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${isDarkMode ? "dark-mode" : "light-mode"} flex items-center justify-center p-4 relative overflow-hidden transition-colors duration-300`}>
-        <div className="absolute -top-40 -left-40 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-indigo-600/20 rounded-full blur-3xl pointer-events-none" />
+        {/* Animated Futuristic Ambient Orbs */}
+        <div className="absolute -top-32 -left-32 w-[30rem] h-[30rem] bg-cyan-500/20 rounded-full blur-[120px] pointer-events-none animate-orb-1" />
+        <div className="absolute -bottom-32 -right-32 w-[32rem] h-[32rem] bg-blue-600/25 rounded-full blur-[130px] pointer-events-none animate-orb-2" />
+        <div className="absolute top-1/3 right-1/4 w-[24rem] h-[24rem] bg-indigo-500/15 rounded-full blur-[100px] pointer-events-none animate-orb-3" />
 
-        <div className="w-full max-w-md glass-card p-8 relative z-10">
+        <div className="w-full max-w-md glass-card p-8 sm:p-10 relative z-10 border border-white/10 shadow-2xl">
           <div className="text-center mb-8">
-            <div className="w-20 h-20 bg-gradient-to-br from-blue-600/30 to-indigo-600/30 rounded-2xl flex items-center justify-center shadow-xl shadow-blue-500/40 mx-auto mb-4 p-1.5 border border-blue-400/50 backdrop-blur-md">
-              <img src="/icon.png" alt="ApexPulse Official Logo" className="w-full h-full object-contain rounded-xl drop-shadow-lg" />
+            {/* Clean Pulsing Logo without rigid square shell */}
+            <div className="relative w-24 h-24 mx-auto mb-3 flex items-center justify-center">
+              <div className="absolute inset-0 bg-cyan-500/20 rounded-full blur-2xl animate-pulse" />
+              <img
+                src="/icon.png"
+                alt="ApexPulse Logo"
+                className="w-20 h-20 object-contain relative z-10 animate-logo-glow"
+              />
             </div>
-            <h1 className="text-2xl font-bold font-outfit text-[var(--text-heading)]">ApexPulse Enterprise</h1>
-            <p className="text-xs text-[var(--text-secondary)] mt-1">Smart Laptop Life & Health Monitoring Portal (Firebase Auth)</p>
+            <h1 className="text-2xl font-bold font-outfit text-[var(--text-heading)] tracking-tight">ApexPulse Enterprise</h1>
+            <p className="text-xs text-[var(--text-secondary)] mt-1.5 font-medium">Smart Laptop Life & Health Monitoring Console</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-5">
             <div>
               <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
-                Admin Email Address
+                Administrator Email
               </label>
               <div className="relative">
-                <Mail className="w-4 h-4 text-blue-500 absolute left-3.5 top-3.5" />
+                <Mail className="w-4 h-4 text-cyan-400 absolute left-3.5 top-3.5" />
                 <input
                   type="email"
                   required
                   value={loginEmail}
                   onChange={(e) => setLoginEmail(e.target.value)}
-                  className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-cyan-500 transition-colors"
                   placeholder="admin@apex.com"
                 />
               </div>
@@ -477,13 +483,13 @@ export default function DashboardPage() {
                 Password
               </label>
               <div className="relative">
-                <Lock className="w-4 h-4 text-indigo-500 absolute left-3.5 top-3.5" />
+                <Lock className="w-4 h-4 text-blue-400 absolute left-3.5 top-3.5" />
                 <input
                   type={showPassword ? "text" : "password"}
                   required
                   value={loginPassword}
                   onChange={(e) => setLoginPassword(e.target.value)}
-                  className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                  className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl pl-10 pr-10 py-2.5 text-sm focus:outline-none focus:border-cyan-500 transition-colors"
                   placeholder="••••••••"
                 />
                 <button
@@ -506,10 +512,10 @@ export default function DashboardPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:to-indigo-500 text-white font-semibold py-3 rounded-xl text-sm shadow-lg shadow-blue-500/30 transition-all hover:scale-[1.01] active:scale-[0.98] flex items-center justify-center gap-2"
             >
-              {loading ? <RotateCw className="w-4 h-4 animate-spin text-white" /> : <Flame className="w-4 h-4 text-amber-400" />}
-              <span>Sign In with Firebase Auth</span>
+              {loading ? <RotateCw className="w-4 h-4 animate-spin text-white" /> : <ShieldCheck className="w-4 h-4 text-cyan-300" />}
+              <span>Sign In to Console</span>
             </button>
 
             <div className="pt-4 border-t border-[var(--border-card)] text-center space-y-2">
@@ -644,7 +650,11 @@ export default function DashboardPage() {
   const adminAccountsList = Object.values(HARDCODED_ADMIN_USERS).map((item) => item.user);
 
   return (
-    <div className={`flex min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${isDarkMode ? "dark-mode" : "light-mode"} transition-colors duration-300`}>
+    <div className={`flex min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${isDarkMode ? "dark-mode" : "light-mode"} transition-colors duration-300 relative overflow-hidden`}>
+      {/* Background Animated Futuristic Ambient Orbs */}
+      <div className="fixed -top-40 -left-40 w-[36rem] h-[36rem] bg-cyan-500/10 rounded-full blur-[140px] pointer-events-none animate-orb-1 z-0" />
+      <div className="fixed -bottom-40 -right-40 w-[40rem] h-[40rem] bg-blue-600/15 rounded-full blur-[150px] pointer-events-none animate-orb-2 z-0" />
+
       {/* Mobile Drawer Overlay Backdrop */}
       {mobileMenuOpen && (
         <div
@@ -662,13 +672,13 @@ export default function DashboardPage() {
         <div>
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
-              <div className="w-11 h-11 bg-gradient-to-br from-blue-600/30 to-indigo-600/30 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 overflow-hidden p-1 border border-blue-400/40">
-                <img src="/icon.png" alt="ApexPulse Logo" className="w-full h-full object-contain rounded-lg" />
+              <div className="relative w-10 h-10 flex items-center justify-center">
+                <img src="/icon.png" alt="ApexPulse Logo" className="w-10 h-10 object-contain animate-logo-glow" />
               </div>
               <div>
                 <h2 className="font-bold text-base leading-tight font-outfit text-[var(--text-heading)]">ApexPulse</h2>
-                <span className="text-[10px] text-amber-400 uppercase tracking-wider font-semibold block">
-                  Firebase Connected
+                <span className="text-[10px] text-cyan-400 uppercase tracking-wider font-semibold block">
+                  Enterprise Console
                 </span>
               </div>
             </div>
@@ -683,7 +693,7 @@ export default function DashboardPage() {
           <nav className="space-y-1">
             {[
               { id: "telemetry", label: "Overview & Life Forecast", icon: <Activity className="w-4 h-4" /> },
-              { id: "firebase_history", label: "🔥 Firebase Device History", icon: <Database className="w-4 h-4 text-amber-400" /> },
+              { id: "firebase_history", label: "Device History & Audit Log", icon: <Database className="w-4 h-4 text-cyan-400" /> },
               { id: "cpu_ram", label: "Processor & Memory Speed", icon: <Cpu className="w-4 h-4" /> },
               { id: "thermal_logs", label: "Temperature & Crashes", icon: <Thermometer className="w-4 h-4" /> },
               { id: "battery", label: "Battery Life & Power", icon: <Battery className="w-4 h-4" /> },
@@ -738,7 +748,7 @@ export default function DashboardPage() {
               </div>
               <div className="overflow-hidden">
                 <strong className="block text-xs font-semibold truncate text-[var(--text-heading)]">{currentUser.name}</strong>
-                <small className="text-[10px] text-amber-400 font-semibold block truncate">Firebase Auth • {currentUser.role}</small>
+                <small className="text-[10px] text-cyan-400 font-semibold block truncate">{currentUser.role}</small>
               </div>
             </div>
             <button onClick={handleLogout} title="Logout" className="text-[var(--text-muted)] hover:text-rose-500 p-1.5 rounded-lg">
@@ -749,21 +759,21 @@ export default function DashboardPage() {
       </aside>
 
       {/* Desktop Sidebar Navigation */}
-      <aside className="w-64 bg-[var(--bg-sidebar)] border-r border-[var(--border-card)] p-6 flex flex-col justify-between hidden md:flex transition-colors duration-300">
+      <aside className="w-64 bg-[var(--bg-sidebar)] border-r border-[var(--border-card)] p-6 flex flex-col justify-between hidden md:flex transition-colors duration-300 z-10">
         <div>
           <div className="flex items-center gap-3 mb-8">
-            <div className="w-12 h-12 bg-gradient-to-br from-blue-600/30 to-indigo-600/30 rounded-xl flex items-center justify-center shadow-lg shadow-blue-500/30 overflow-hidden p-1 border border-blue-400/40">
-              <img src="/icon.png" alt="ApexPulse Logo" className="w-full h-full object-contain rounded-lg" />
+            <div className="relative w-11 h-11 flex items-center justify-center">
+              <img src="/icon.png" alt="ApexPulse Logo" className="w-11 h-11 object-contain animate-logo-glow" />
             </div>
             <div>
               <h2 className="font-bold text-lg leading-tight font-outfit text-[var(--text-heading)]">ApexPulse</h2>
-              <span className="text-[11px] text-amber-400 uppercase tracking-wider font-semibold block flex items-center gap-1">
-                <Flame className="w-3 h-3 text-amber-400 inline" /> Firebase Active
+              <span className="text-[11px] text-cyan-400 uppercase tracking-wider font-semibold block">
+                Enterprise Console
               </span>
             </div>
           </div>
 
-          {/* Simple Human English Sidebar Navigation */}
+          {/* Sidebar Navigation */}
           <nav className="space-y-1">
             <button
               onClick={() => setActiveTab("telemetry")}
@@ -781,12 +791,12 @@ export default function DashboardPage() {
               onClick={() => setActiveTab("firebase_history")}
               className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all ${
                 activeTab === "firebase_history"
-                  ? "bg-gradient-to-r from-amber-500 to-orange-600 text-white shadow-lg shadow-orange-500/30"
+                  ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-lg shadow-cyan-500/30"
                   : "text-[var(--text-secondary)] hover:bg-[var(--bg-input)] hover:text-[var(--text-heading)]"
               }`}
             >
-              <Database className="w-4 h-4 text-amber-400" />
-              🔥 Firebase Device History
+              <Database className="w-4 h-4 text-cyan-400" />
+              Device History & Audit Log
             </button>
 
             <button
@@ -892,7 +902,7 @@ export default function DashboardPage() {
               </div>
               <div className="overflow-hidden">
                 <strong className="block text-xs font-semibold truncate text-[var(--text-heading)]">{currentUser.name}</strong>
-                <small className="text-[10px] text-amber-400 font-semibold block truncate">Firebase • {currentUser.role}</small>
+                <small className="text-[10px] text-cyan-400 font-semibold block truncate">{currentUser.role}</small>
               </div>
             </div>
             <button
@@ -907,7 +917,7 @@ export default function DashboardPage() {
       </aside>
 
       {/* Main Content Area */}
-      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-w-[1600px] mx-auto w-full bg-[var(--bg-primary)] transition-colors duration-300">
+      <main className="flex-1 p-4 sm:p-6 md:p-10 overflow-y-auto max-w-[1600px] mx-auto w-full bg-[var(--bg-primary)] transition-colors duration-300 z-10 relative">
         {/* Mobile Top Header */}
         <div className="flex items-center justify-between mb-4 md:hidden pb-4 border-b border-[var(--border-card)]">
           <button
@@ -940,16 +950,16 @@ export default function DashboardPage() {
         <header className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
           <div>
             <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <span className="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1">
-                <Flame className="w-3.5 h-3.5 text-amber-400" /> Firebase Database Active
+              <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider flex items-center gap-1">
+                <ShieldCheck className="w-3.5 h-3.5 text-cyan-400" /> Enterprise Health Monitoring Active
               </span>
               <span className="text-[10px] font-bold text-emerald-500 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-                Realtime Firestore Sync • 5s Polling
+                Real-Time Telemetry Sync
               </span>
             </div>
             <h1 className="text-2xl md:text-3xl font-bold font-outfit text-[var(--text-heading)]">
               {activeTab === "telemetry" && "Laptop Overview & Life Forecast"}
-              {activeTab === "firebase_history" && "🔥 Firebase Firestore Telemetry & Audit History"}
+              {activeTab === "firebase_history" && "Device Audit & History Database"}
               {activeTab === "cpu_ram" && "Processor Speed & Memory Usage"}
               {activeTab === "thermal_logs" && "Laptop Temperature & Shutdown Records"}
               {activeTab === "battery" && "Battery Life & Capacity Health"}
@@ -964,7 +974,7 @@ export default function DashboardPage() {
               <select
                 value={selectedDeviceId}
                 onChange={(e) => selectDevice(e.target.value)}
-                className="bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] px-4 py-2.5 rounded-full text-xs font-semibold focus:outline-none focus:border-blue-500 appearance-none pr-8 cursor-pointer"
+                className="bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] px-4 py-2.5 rounded-full text-xs font-semibold focus:outline-none focus:border-cyan-500 appearance-none pr-8 cursor-pointer"
               >
                 <option value="local" className={isDarkMode ? "bg-[#0F172A] text-white" : "bg-white text-slate-900"}>
                   This Laptop ({telemetry?.device_name && !telemetry.device_name.startsWith("169.254.") ? telemetry.device_name : "Web Preview"})
@@ -1028,7 +1038,7 @@ export default function DashboardPage() {
             <section className="col-span-12 lg:col-span-8 glass-card p-6 flex flex-col justify-between relative overflow-hidden">
               <div className="flex justify-between items-start mb-6">
                 <div>
-                  <span className="text-xs font-bold text-blue-500 uppercase tracking-wider block mb-1">Remaining Useful Life (RUL)</span>
+                  <span className="text-xs font-bold text-cyan-400 uppercase tracking-wider block mb-1">Remaining Useful Life (RUL)</span>
                   <h2 className="text-3xl font-extrabold font-outfit text-[var(--text-heading)]">
                     {prediction ? `${prediction.rul_months.toFixed(1)} Months Left` : "Calculating..."}
                   </h2>
@@ -1056,7 +1066,7 @@ export default function DashboardPage() {
 
                 <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)]">
                   <span className="text-[11px] text-[var(--text-secondary)] block">Hard Drive Health</span>
-                  <strong className="text-sm font-bold text-cyan-500 block mt-0.5">{mlInput?.ssd_health ? `${mlInput.ssd_health.toFixed(1)}%` : "--%"}</strong>
+                  <strong className="text-sm font-bold text-cyan-400 block mt-0.5">{mlInput?.ssd_health ? `${mlInput.ssd_health.toFixed(1)}%` : "--%"}</strong>
                 </div>
 
                 <div className="bg-[var(--bg-input)] p-3.5 rounded-xl border border-[var(--border-input)]">
@@ -1078,20 +1088,20 @@ export default function DashboardPage() {
                 value={mlInput?.edhi ? `${mlInput.edhi.toFixed(1)}` : "85.0"}
                 label="out of 100"
                 percent={mlInput?.edhi || 85}
-                color="#3B82F6"
+                color="#06B6D4"
                 subtext="Overall Hardware Health Index"
               />
             </section>
           </div>
         )}
 
-        {/* TAB 2: FIREBASE FIRESTORE DEVICE HISTORY & AUTH ACCOUNTS */}
+        {/* TAB 2: DEVICE HISTORY & AUDIT LOG */}
         {activeTab === "firebase_history" && (
           <div className="space-y-6">
-            {/* Enterprise Admin Users Registered in Firebase */}
+            {/* Enterprise Admin Users */}
             <section className="glass-card p-6">
               <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <Users className="w-5 h-5 text-amber-400" /> Enterprise Administrator Accounts (`users` collection)
+                <Users className="w-5 h-5 text-cyan-400" /> Enterprise Administrator Accounts
               </h3>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1103,7 +1113,7 @@ export default function DashboardPage() {
                       </div>
                       <div>
                         <strong className="block text-[var(--text-heading)] font-bold">{acc.name}</strong>
-                        <span className="text-[10px] text-amber-400 font-mono block">{acc.email}</span>
+                        <span className="text-[10px] text-cyan-400 font-mono block">{acc.email}</span>
                         <small className="text-[10px] text-[var(--text-secondary)]">{acc.role}</small>
                       </div>
                     </div>
@@ -1117,33 +1127,33 @@ export default function DashboardPage() {
               <div className="flex items-center justify-between mb-6 flex-wrap gap-4">
                 <div>
                   <h3 className="font-bold text-lg font-outfit text-[var(--text-heading)] flex items-center gap-2">
-                    <Flame className="w-5 h-5 text-amber-400" /> Firestore Telemetry History Database (`telemetry_history`)
+                    <Database className="w-5 h-5 text-cyan-400" /> Telemetry History Database Log
                   </h3>
                   <p className="text-xs text-[var(--text-secondary)] mt-1">
-                    Real-time historical telemetry snapshots logged to Firebase Firestore project <code className="text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded font-mono">apex-ml-4b1d9</code>.
+                    Real-time historical telemetry snapshots logged across monitored enterprise devices.
                   </p>
                 </div>
 
                 <button
                   onClick={loadFirestoreData}
                   disabled={loadingFirestore}
-                  className="bg-amber-500/20 hover:bg-amber-500/30 text-amber-400 border border-amber-500/40 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm"
+                  className="bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 border border-cyan-500/40 px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-sm"
                 >
                   <RotateCw className={`w-3.5 h-3.5 ${loadingFirestore ? "animate-spin" : ""}`} />
-                  <span>Refresh Firestore Logs</span>
+                  <span>Refresh Records</span>
                 </button>
               </div>
 
               {loadingFirestore ? (
                 <div className="py-12 text-center text-xs text-[var(--text-muted)] flex items-center justify-center gap-2">
-                  <RotateCw className="w-4 h-4 animate-spin text-amber-400" />
-                  <span>Loading Firestore Database records...</span>
+                  <RotateCw className="w-4 h-4 animate-spin text-cyan-400" />
+                  <span>Loading Database records...</span>
                 </div>
               ) : firestoreHistory.length === 0 ? (
                 <div className="py-10 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-input)] rounded-2xl border border-[var(--border-input)]">
-                  <Database className="w-8 h-8 text-amber-400 mx-auto mb-2 opacity-60" />
-                  <p className="font-bold text-[var(--text-heading)]">No Firestore telemetry snapshots recorded yet.</p>
-                  <p className="mt-1">Telemetry automatically syncs to Firebase Firestore during standard 5-second polling.</p>
+                  <Database className="w-8 h-8 text-cyan-400 mx-auto mb-2 opacity-60" />
+                  <p className="font-bold text-[var(--text-heading)]">No telemetry snapshots recorded yet.</p>
+                  <p className="mt-1">Telemetry automatically syncs during standard 5-second polling loop.</p>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -1175,7 +1185,7 @@ export default function DashboardPage() {
                             <span className="text-emerald-400 font-bold">{rec.battery_health?.toFixed(1)}% Bat</span> •{" "}
                             <span className="text-cyan-400 font-bold">{rec.ssd_health?.toFixed(1)}% SSD</span>
                           </td>
-                          <td className="py-3 px-4 font-bold text-blue-400">
+                          <td className="py-3 px-4 font-bold text-cyan-400">
                             {rec.edhi?.toFixed(1)} / 100
                           </td>
                           <td className="py-3 px-4 font-bold text-emerald-400">
@@ -1196,12 +1206,12 @@ export default function DashboardPage() {
 
             <section className="glass-card p-6">
               <h3 className="font-bold text-lg font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <Wrench className="w-5 h-5 text-indigo-400" /> Firestore Maintenance Audit Log (`maintenance_logs`)
+                <Wrench className="w-5 h-5 text-indigo-400" /> Maintenance Audit Log
               </h3>
 
               {firestoreMaintenanceLogs.length === 0 ? (
                 <div className="py-8 text-center text-xs text-[var(--text-muted)] bg-[var(--bg-input)] rounded-2xl border border-[var(--border-input)]">
-                  <span>No maintenance actions recorded in Firestore yet. Trigger a repair simulation in the "Fix & Upgrade Guide" tab to log events.</span>
+                  <span>No maintenance actions recorded yet. Trigger a repair simulation in the "Fix & Upgrade Guide" tab to log events.</span>
                 </div>
               ) : (
                 <div className="overflow-x-auto">
@@ -1224,7 +1234,7 @@ export default function DashboardPage() {
                           <td className="py-3 px-4 font-semibold text-[var(--text-heading)]">{log.device_id}</td>
                           <td className="py-3 px-4 font-bold text-indigo-400 uppercase tracking-wider">{log.action.replace("_", " ")}</td>
                           <td className="py-3 px-4 font-bold text-emerald-400">{log.rul_months?.toFixed(1)} Months</td>
-                          <td className="py-3 px-4 font-bold text-blue-400">{log.edhi?.toFixed(1)}</td>
+                          <td className="py-3 px-4 font-bold text-cyan-400">{log.edhi?.toFixed(1)}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -1418,13 +1428,13 @@ export default function DashboardPage() {
           <div className="grid grid-cols-12 gap-6">
             <section className="col-span-12 lg:col-span-6 glass-card p-6">
               <h3 className="font-bold text-base font-outfit text-[var(--text-heading)] flex items-center gap-2 mb-4">
-                <HardDrive className="w-5 h-5 text-cyan-500" /> Storage Hard Drive Condition
+                <HardDrive className="w-5 h-5 text-cyan-400" /> Storage Hard Drive Condition
               </h3>
 
               <div className="bg-[var(--bg-input)] p-5 rounded-2xl border border-[var(--border-input)] mb-6">
                 <span className="text-xs text-[var(--text-secondary)] uppercase font-semibold block mb-1">Hard Drive Health</span>
                 <div className="flex items-baseline gap-3">
-                  <span className="text-4xl font-extrabold font-outfit text-cyan-500">
+                  <span className="text-4xl font-extrabold font-outfit text-cyan-400">
                     {mlInput ? `${mlInput.ssd_health.toFixed(1)}%` : "--%"}
                   </span>
                   <span className="text-xs text-emerald-500 font-semibold">Drive Health Good</span>
