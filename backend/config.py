@@ -31,7 +31,7 @@ LHM_EXE = os.path.join(LHM_DIR, "LibreHardwareMonitor.exe")
 # Production & Performance Configuration
 SERVER_PORT = int(os.environ.get("PORT", 5000))
 API_KEY = os.environ.get("APEXPULSE_API_KEY", "")  # Optional API key for remote agents
-CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", 10))  # Hardware telemetry cache duration
+CACHE_TTL_SECONDS = int(os.environ.get("CACHE_TTL_SECONDS", 5))  # Hardware telemetry cache duration (5 seconds)
 import tempfile
 
 default_store = os.path.join(tempfile.gettempdir(), "fleet_store.json") if os.environ.get("VERCEL") else os.path.join(BASE_DIR, "fleet_store.json")

@@ -254,23 +254,45 @@ export default function DashboardPage() {
     localStorage.removeItem("apex_user");
   };
 
+  const safeFetchApi = useCallback(async (path: string, options: RequestInit = {}) => {
+    const candidateBases = [
+      process.env.NEXT_PUBLIC_API_URL,
+      "http://127.0.0.1:5000",
+      "http://localhost:5000",
+      "https://apex-ml-back.vercel.app"
+    ].filter(Boolean) as string[];
+
+    const uniqueBases = Array.from(new Set(candidateBases));
+
+    for (const base of uniqueBases) {
+      try {
+        const url = `${base.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
+        const res = await fetch(url, options);
+        if (res.ok) {
+          return res;
+        }
+      } catch (_err) {
+        // Silently attempt next backend candidate URL
+      }
+    }
+    throw new Error("Unable to connect to laptop telemetry backend server.");
+  }, []);
+
   const fetchFleet = useCallback(async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/api/devices`);
-      if (res.ok) {
-        const json = await res.json();
-        setDevicesList(json.devices);
-      }
+      const res = await safeFetchApi("/api/devices");
+      const json = await res.json();
+      setDevicesList(json.devices);
     } catch (_e) {
-      console.error("Fleet fetch error:", _e);
+      console.warn("Fleet fetch notice:", _e);
     }
-  }, []);
+  }, [safeFetchApi]);
 
   const fetchPrediction = useCallback(async (showSpinner = false, age = manualAge, usage = dailyUsage) => {
     if (showSpinner) setLoading(true);
     setError(null);
     try {
-      let endpoint = `${API_BASE_URL}/api/predict`;
+      let path = "/api/predict";
       let options: RequestInit = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -278,13 +300,11 @@ export default function DashboardPage() {
       };
 
       if (selectedDeviceId !== "local") {
-        endpoint = `${API_BASE_URL}/api/devices/${encodeURIComponent(selectedDeviceId)}`;
+        path = `/api/devices/${encodeURIComponent(selectedDeviceId)}`;
         options = { method: "GET" };
       }
 
-      const res = await fetch(endpoint, options);
-      if (!res.ok) throw new Error(`Backend API Error: ${res.statusText}`);
-
+      const res = await safeFetchApi(path, options);
       const json = await res.json();
       if (json.error) throw new Error(json.error);
 
@@ -304,13 +324,12 @@ export default function DashboardPage() {
 
       fetchFleet();
     } catch (err: unknown) {
-      console.error(err);
       const msg = err instanceof Error ? err.message : "Unable to connect to laptop monitoring server.";
       setError(msg);
     } finally {
       if (showSpinner) setLoading(false);
     }
-  }, [manualAge, dailyUsage, selectedDeviceId, fetchFleet]);
+  }, [manualAge, dailyUsage, selectedDeviceId, fetchFleet, safeFetchApi]);
 
   const loadFirestoreData = useCallback(async () => {
     setLoadingFirestore(true);
@@ -341,7 +360,7 @@ export default function DashboardPage() {
     setLoading(true);
     setError(null);
     try {
-      let endpoint = `${API_BASE_URL}/api/predict`;
+      let path = "/api/predict";
       let options: RequestInit = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -349,26 +368,11 @@ export default function DashboardPage() {
       };
 
       if (deviceId !== "local") {
-        endpoint = `${API_BASE_URL}/api/devices/${encodeURIComponent(deviceId)}`;
+        path = `/api/devices/${encodeURIComponent(deviceId)}`;
         options = { method: "GET" };
       }
 
-      const res = await fetch(endpoint, options);
-      if (!res.ok) {
-        const fallbackRes = await fetch(`${API_BASE_URL}/api/predict`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ age: manualAge, daily_usage: dailyUsage }),
-        });
-        if (fallbackRes.ok) {
-          const fallbackJson = await fallbackRes.json();
-          setData({ telemetry: fallbackJson.telemetry, prediction: fallbackJson.prediction });
-          setLastUpdatedTime(new Date().toLocaleTimeString());
-          return;
-        }
-        throw new Error("Unable to load device details.");
-      }
-
+      const res = await safeFetchApi(path, options);
       const json = await res.json();
       if (json.telemetry && json.prediction) {
         setData({ telemetry: json.telemetry, prediction: json.prediction });
@@ -379,7 +383,7 @@ export default function DashboardPage() {
         syncDeviceToFirestore(json);
       }
     } catch (err: unknown) {
-      console.error("Device selection error:", err);
+      console.warn("Device selection notice:", err);
       const msg = err instanceof Error ? err.message : "Device details update failed.";
       setError(msg);
     } finally {
@@ -391,7 +395,7 @@ export default function DashboardPage() {
     if (!data?.prediction.ml_input) return;
     setLoading(true);
     try {
-      const res = await fetch(`${API_BASE_URL}/api/simulate-maintenance`, {
+      const res = await safeFetchApi("/api/simulate-maintenance", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
