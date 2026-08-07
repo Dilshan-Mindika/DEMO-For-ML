@@ -70,7 +70,7 @@
     "os_name": "Windows",
     "os_version": "10.0.26200",
     "serial_number": "N/A",
-    "last_seen": "2026-08-08T02:33:33.640566",
+    "last_seen": "2026-08-08T02:10:49.875089",
     "telemetry": {
       "device_name": "DESKTOP-K6S3QF9",
       "device_model": "Standard Laptop",
@@ -78,16 +78,16 @@
       "os_version": "10.0.26200",
       "manufacturer": "Unknown",
       "serial_number": "N/A",
-      "cpu_usage": 50.0,
-      "ram_usage": 60.4,
-      "disk_usage": 59.0,
-      "battery_percent": 99,
+      "cpu_usage": 94.6,
+      "ram_usage": 60.2,
+      "disk_usage": 58.9,
+      "battery_percent": 89,
       "power_plugged": true,
-      "design_capacity_mwh": 65003,
-      "full_charge_capacity_mwh": 57242,
-      "battery_health": 88.06,
-      "battery_wear": 11.94,
-      "battery_cycles": 2,
+      "design_capacity_mwh": null,
+      "full_charge_capacity_mwh": null,
+      "battery_health": 100.0,
+      "battery_wear": 0.0,
+      "battery_cycles": 150,
       "temperature_current": 45.0,
       "temperature_avg": 45.0,
       "disk_health_status": [
@@ -100,12 +100,12 @@
       "ram_modules": null,
       "storage_drives": null,
       "cpu_details": null,
-      "uptime_hours": 68.81,
+      "uptime_hours": 68.43,
       "shutdowns_30d": 0,
-      "timestamp": "2026-08-08T02:33:33.639830"
+      "timestamp": "2026-08-08T02:10:49.872762"
     },
     "prediction": {
-      "rul_months": 20.82,
+      "rul_months": 20.23,
       "recommendation": "Plan Replacement",
       "status_level": "plan_replacement",
       "status_color": "#F59E0B",
@@ -114,15 +114,106 @@
         "usage_profile": "Normal",
         "age": 24.0,
         "usage_hours": 4680.0,
-        "battery_cycles": 2,
-        "battery_health": 88.06,
+        "battery_cycles": 150,
+        "battery_health": 100.0,
         "ssd_health": 100.0,
         "temperature": 45.0,
-        "performance_score": 58.03,
+        "performance_score": 44.72,
         "shutdown_count": 0,
-        "edhi": 90.72
+        "edhi": 91.71
       },
-      "timestamp": "2026-08-08T02:33:33.640541"
+      "timestamp": "2026-08-08T02:10:49.875060"
+    }
+  },
+  "desktop-k6s3qf9-by2041a90301323": {
+    "device_id": "desktop-k6s3qf9-by2041a90301323",
+    "device_name": "DESKTOP-K6S3QF9",
+    "device_model": "Blade 15 Base Model (Early 2020) - RZ09-0328",
+    "manufacturer": "Razer",
+    "os_name": "Windows",
+    "os_version": "10.0.26200",
+    "serial_number": "BY2041A90301323",
+    "last_seen": "2026-08-08T02:37:25.558714",
+    "telemetry": {
+      "device_name": "DESKTOP-K6S3QF9",
+      "device_model": "Blade 15 Base Model (Early 2020) - RZ09-0328",
+      "os_name": "Windows",
+      "os_version": "10.0.26200",
+      "manufacturer": "Razer",
+      "serial_number": "BY2041A90301323",
+      "cpu_usage": 89.4,
+      "ram_usage": 60.9,
+      "disk_usage": 59.0,
+      "battery_percent": 99,
+      "power_plugged": true,
+      "design_capacity_mwh": null,
+      "full_charge_capacity_mwh": null,
+      "battery_health": 100.0,
+      "battery_wear": 0.0,
+      "battery_cycles": 150,
+      "temperature_current": 69.3,
+      "temperature_avg": 67.3,
+      "disk_health_status": [
+        {
+          "FriendlyName": "PhysicalDisk0",
+          "HealthStatus": "Healthy"
+        }
+      ],
+      "ssd_health_percent": 100.0,
+      "ram_modules": [
+        {
+          "bank": "ChannelA-DIMM0",
+          "capacity_gb": 16.0,
+          "speed_mhz": 2933,
+          "manufacturer": "Samsung"
+        },
+        {
+          "bank": "ChannelB-DIMM0",
+          "capacity_gb": 16.0,
+          "speed_mhz": 2933,
+          "manufacturer": "04CB"
+        }
+      ],
+      "storage_drives": [
+        {
+          "name": "WDC WDS100T2B0C-00PXH0",
+          "size_gb": 931.5,
+          "media_type": "Fixed hard disk media",
+          "health_status": "Healthy",
+          "health_percent": 100
+        },
+        {
+          "name": "PC SN530 NVMe WDC 512GB",
+          "size_gb": 476.9,
+          "media_type": "SSD (NVMe)",
+          "health_status": "Healthy",
+          "health_percent": 100
+        }
+      ],
+      "cpu_details": null,
+      "uptime_hours": 68.88,
+      "shutdowns_30d": 0,
+      "timestamp": "2026-08-08T02:37:25.558015"
+    },
+    "prediction": {
+      "rul_months": 19.22,
+      "recommendation": "Plan Replacement",
+      "status_level": "plan_replacement",
+      "status_color": "#F59E0B",
+      "ml_input": {
+        "device_model": "Blade 15 Base Model (Early 2020) - RZ09-0328",
+        "usage_profile": "Normal",
+        "age": 24.0,
+        "usage_hours": 4680.0,
+        "battery_cycles": 150,
+        "battery_health": 100.0,
+        "ssd_health": 100.0,
+        "temperature": 67.3,
+        "performance_score": 46.06,
+        "shutdown_count": 0,
+        "edhi": 83.61
+      },
+      "timestamp": "2026-08-08T02:37:25.558691"
     }
   }
 }
