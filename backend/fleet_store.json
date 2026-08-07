@@ -70,7 +70,7 @@
     "os_name": "Windows",
     "os_version": "10.0.26200",
     "serial_number": "N/A",
-    "last_seen": "2026-08-08T00:49:34.423423",
+    "last_seen": "2026-08-08T00:52:53.926172",
     "telemetry": {
       "device_name": "DESKTOP-K6S3QF9",
       "device_model": "Standard Laptop",
@@ -78,8 +78,8 @@
       "os_version": "10.0.26200",
       "manufacturer": "Unknown",
       "serial_number": "N/A",
-      "cpu_usage": 18.9,
-      "ram_usage": 54.5,
+      "cpu_usage": 38.9,
+      "ram_usage": 54.4,
       "disk_usage": 59.2,
       "battery_percent": 100,
       "power_plugged": true,
@@ -100,12 +100,12 @@
       "ram_modules": null,
       "storage_drives": null,
       "cpu_details": null,
-      "uptime_hours": 67.08,
+      "uptime_hours": 67.13,
       "shutdowns_30d": 0,
-      "timestamp": "2026-08-08T00:49:34.423098"
+      "timestamp": "2026-08-08T00:52:50.326341"
     },
     "prediction": {
-      "rul_months": 21.14,
+      "rul_months": 21.0,
       "recommendation": "Plan Replacement",
       "status_level": "plan_replacement",
       "status_color": "#F59E0B",
@@ -118,11 +118,11 @@
         "battery_health": 88.06,
         "ssd_health": 100.0,
         "temperature": 45.0,
-        "performance_score": 69.1,
+        "performance_score": 63.13,
         "shutdown_count": 0,
-        "edhi": 92.38
+        "edhi": 91.48
       },
-      "timestamp": "2026-08-08T00:49:34.423414"
+      "timestamp": "2026-08-08T00:52:53.926140"
     }
   }
 }
