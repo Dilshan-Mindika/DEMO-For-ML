@@ -1,18 +1,23 @@
-# ApexPulse: Enterprise Laptop Lifecycle & RUL Prediction System
+# ApexPulse: Enterprise Laptop Health Management & RUL Life Forecasting System
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Next.js](https://img.shields.io/badge/Next.js-15-black.svg)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16-black.svg)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue.svg)](https://www.typescriptlang.org/)
 [![XGBoost](https://img.shields.io/badge/Model-XGBoost%20ML-orange.svg)](https://xgboost.readthedocs.io/)
+[![Firebase](https://img.shields.io/badge/Database-Firebase%20Firestore-FFCA28.svg)](https://firebase.google.com/)
 [![License](https://img.shields.io/badge/License-Enterprise-emerald.svg)]()
 
-> **ApexPulse** is an end-to-end Enterprise Laptop Predictive Maintenance and Remaining Useful Life (RUL) forecasting platform. It combines automated Windows hardware telemetry collection, an AI Health Scoring Agent, XGBoost machine learning pipeline inference, component-level maintenance simulation, and a modern glassmorphic Next.js web dashboard with multi-user static admin authentication.
+> **ApexPulse** is a production-ready Predictive Maintenance and Remaining Useful Life (RUL) forecasting platform for enterprise laptop fleets. It combines automated native Windows hardware telemetry collection, an AI Health Scoring Agent, XGBoost machine learning pipeline inference, sub-second real-time Firebase Firestore WebSocket sync (`onSnapshot`), and a modern glassmorphic Next.js web dashboard with multi-user admin authentication.
 
 ---
 
-## Enterprise Admin Login Credentials (5 Accounts)
+## 📖 Research Specification & Academic Manual
+For deep architectural details, mathematical formulations (EDHI and XGBoost equations), complete codebase walkthroughs, and **100 Viva Voce Questions & Detailed Answers**, please see the master research specification file:
+👉 **[`overview.md`](file:///d:/Projects/DEMO-For-ML/overview.md)**
 
-The dashboard includes a glassmorphic authentication system supporting 5 hardcoded administrator accounts:
+---
+
+## 🔐 Enterprise Admin Credentials (5 Accounts)
 
 | Administrator Email | Password | Name | Role |
 | :--- | :--- | :--- | :--- |
@@ -24,82 +29,136 @@ The dashboard includes a glassmorphic authentication system supporting 5 hardcod
 
 ---
 
-## Industrial Project Structure
+## ⚙️ Complete Local Setup & Execution Guide
 
-The project strictly follows industrial repository standards:
-
-```
-DEMO For ML/
-├── backend/                     # Python REST API & Core ML Intelligence
-│   ├── app.py                   # Flask REST API server (CORS & PORT configuration)
-│   ├── config.py                # Environment paths, Vercel /tmp setup & RUL thresholds
-│   ├── vercel.json              # Vercel Serverless configuration with model bundle rules
-│   ├── api/                     # Vercel Serverless Entry Point
-│   │   └── index.py             # Serverless handler for Flask API routes
-│   ├── agent/                   # Client Agent & 1-Click Installer Package
-│   │   ├── client_agent.py      # Standalone Python telemetry agent with retries
-│   │   ├── Install_ApexPulse_Agent.bat # Double-clickable Windows Startup Installer
-│   │   └── build_agent_exe.py   # PyInstaller standalone EXE compiler
-│   ├── models/                  # Dataclasses & Trained ML Artifacts
-│   │   ├── telemetry_schema.py  # TelemetryData, MLInputSchema, PredictionResult
-│   │   └── xgboost_rul_model.pkl # Trained XGBoost RUL Prediction Model Pipeline
-│   ├── core/                    # OOP Intelligence Modules
-│   │   ├── collector.py         # HardwareCollector (OS-aware, 10s caching)
-│   │   ├── agent.py             # DeviceHealthAgent (Usage Profile, Performance Score, EDHI)
-│   │   ├── model_service.py     # LifecyclePredictor (XGBoost RUL Model Inference)
-│   │   ├── component_manager.py # ComponentMaintenanceManager (Battery & SSD replacements)
-│   │   └── fleet_manager.py     # FleetManager (Thread-safe, JSON persisted)
-│   └── tests/                   # Automated Unit Test Suite
-│       └── test_pipeline.py     # Pipeline Unit Tests
-│
-├── frontend/                    # Next.js 15 Web Dashboard Application
-│   ├── src/
-│   │   ├── app/
-│   │   │   ├── page.tsx         # Main Dashboard & Login View (React, TypeScript)
-│   │   │   ├── auth.ts          # Static 5-User Admin Authentication Module
-│   │   │   ├── layout.tsx       # Root layout with fonts
-│   │   │   └── globals.css      # Dark theme Tailwind styling & glassmorphism tokens
-│   │   └── package.json         # Node dependencies
-│   └── ...
-│
-├── deploy.md                    # Vercel & Multi-Device Deployment Guide
-├── .gitignore                   # Workspace Git Ignore Rules
-└── README.md                    # System Documentation
-```
+### 1. Environment Prerequisites
+Before setting up ApexPulse locally, ensure your machine has:
+- **Operating System**: Windows 10 or 11 (64-bit) for native hardware WMI telemetry collection.
+- **Python**: Python 3.10 or higher ([Download Python](https://www.python.org/downloads/)). *Make sure to check "Add Python to PATH" during installation.*
+- **Node.js**: Node.js 18.0 or higher ([Download Node.js](https://nodejs.org/)).
 
 ---
 
-## Key Features
+### 2. Step-by-Step Backend Setup & Library Installation
 
-### 1. 1-Click Double-Click Client Agent Installation
-Target employee laptops can be configured in seconds without running PowerShell commands:
-- Simply double-click **[`agent/Install_ApexPulse_Agent.bat`](file:///c:/Users/Dilshan%20Mindika/Downloads/DEMO%20For%20ML/agent/Install_ApexPulse_Agent.bat)**.
-- Copies the agent to `%AppData%\ApexPulseAgent` and registers it in **Windows Registry Startup** (`HKCU\Software\Microsoft\Windows\CurrentVersion\Run\ApexPulseAgent`).
-- The agent launches automatically on Windows startup and POSTs hardware metrics to the central server every 30 minutes.
+1. Open your terminal or PowerShell and navigate to the project root directory:
+   ```powershell
+   cd d:\Projects\DEMO-For-ML
+   ```
 
-### 2. Multi-Device Enterprise Fleet Inventory
-- Central Fleet Manager (`backend/core/fleet_manager.py`) tracks all connected laptops by Serial Number and Hostname.
-- Next.js dashboard includes a **Device Selector Dropdown** allowing IT administrators to switch telemetry views across employee laptops in real time.
+2. (Optional but Recommended) Create and activate a Python virtual environment:
+   ```powershell
+   python -m venv venv
+   .\venv\Scripts\activate
+   ```
 
-### 3. AI Health Scoring & XGBoost RUL Prediction
-- Evaluates Usage Profile (`Light`, `Normal`, `Heavy`), Performance Score (0-100), and Enterprise Device Health Index (EDHI) (0-100).
-- Predicts Remaining Useful Life in months and maps recommendation badges (`Healthy Device`, `Monitor Device`, `Plan Replacement`, `Replace Soon`).
+3. Install required Python packages:
+   ```powershell
+   pip install -r backend/requirements.txt
+   ```
+   *Required packages installed:*
+   - `flask`, `flask-cors` (REST API Server)
+   - `psutil` (System & Process Metrics)
+   - `wmi`, `pywin32` (Windows Management Instrumentation - Windows only)
+   - `requests` (HTTP Client)
+   - `xgboost`, `scikit-learn`, `joblib` (Machine Learning Engine)
+
+4. Test backend imports:
+   ```powershell
+   python -c "import sys; sys.path.insert(0, 'backend'); from core.collector import HardwareCollector; print('Backend environment verified!')"
+   ```
 
 ---
 
-## Quick Start Guide
+### 3. Step-by-Step Frontend Setup & Dependencies Installation
 
-### Step 1: Start Backend API (Port 5000)
+1. Navigate to the `frontend/` directory:
+   ```powershell
+   cd frontend
+   ```
+
+2. Install Node modules:
+   ```powershell
+   npm install
+   ```
+   *Required packages installed:*
+   - `next`, `react`, `react-dom` (Next.js 16 App Router)
+   - `firebase` (Firebase Auth & Firestore Real-Time WebSockets)
+   - `lucide-react` (Vector Icon Library)
+   - `typescript` (Type Safety Compiler)
+
+3. Verify environment configuration (`frontend/.env.local`):
+   Ensure `frontend/.env.local` contains valid Firebase configuration:
+   ```env
+   NEXT_PUBLIC_FIREBASE_API_KEY=AIzaSyBtlciNYhSGiAO4npSIaSJYpocEAtPzO5w
+   NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=apex-ml-4b1d9.firebaseapp.com
+   NEXT_PUBLIC_FIREBASE_PROJECT_ID=apex-ml-4b1d9
+   NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=apex-ml-4b1d9.firebasestorage.app
+   NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=633780934728
+   NEXT_PUBLIC_FIREBASE_APP_ID=1:633780934728:web:53526501757ed9b69d607d
+   ```
+
+---
+
+### 4. Running the Local Servers
+
+#### Option A: Run Backend Server (Port 5000)
+In Terminal 1 (from project root):
 ```powershell
 python backend/app.py
 ```
+*Output:* `* Running on http://127.0.0.1:5000`
 
-### Step 2: Start Next.js Frontend (Port 3000)
+#### Option B: Run Next.js Frontend Development Server (Port 3000)
+In Terminal 2 (from `frontend/` directory):
 ```powershell
 cd frontend
 npm run dev
 ```
+*Output:* `▲ Next.js 16 (Turbopack) - Ready in http://localhost:3000`
 
-### Step 3: Log In to Dashboard
-1. Open **`http://localhost:3000`** in your browser.
-2. Sign in using any of the 5 admin accounts (e.g. `admin@apex.com` / `admin123` for **Dilshan Mindika**).
+---
+
+### 5. Accessing the Local Dashboard
+1. Open your browser and go to **`http://localhost:3000`**.
+2. Sign in with any of the 5 admin credentials (e.g. `admin@apex.com` / `admin123`).
+3. View real-time hardware telemetry, sparklines, RUL predictions, and What-If simulator.
+
+---
+
+### 6. Installing & Running Remote Client Agent (`.bat` / `.exe`)
+
+To register and monitor a laptop device:
+
+#### Method 1: 1-Click Batch Installer (`.bat`)
+- On target Windows laptop, right-click **`Install_ApexPulse_Agent.bat`** (located in `frontend/public/downloads/`) and select **Run as Administrator** (or double-click).
+- Installs script to `%APPDATA%\ApexPulseAgent`, registers Windows Startup Registry key, and starts background polling every 30 seconds.
+
+#### Method 2: Standalone Executable (`ApexPulseAgent.exe`)
+- Recompile binary if needed:
+  ```powershell
+  python backend/agent/build_agent_exe.py
+  ```
+- Double-click **`ApexPulseAgent.exe`**. It executes silently in the background, reporting hardware telemetry to the backend and updating Firebase Firestore in **< 1 second**.
+
+---
+
+## 🚀 Production Deployment Commands
+
+### Deploy Frontend & Backend to Vercel
+```powershell
+git add .
+git commit -m "deploy: production deployment"
+git push origin main
+```
+
+### Deploy Firebase Security Rules
+Deploy updated rules using Firebase CLI or paste into [Firebase Console](https://console.firebase.google.com/u/0/project/apex-ml-4b1d9/firestore/rules):
+```powershell
+firebase deploy --only firestore:rules
+```
+
+---
+
+## 📄 License & Credits
+Developed as an Enterprise Academic Research Specification for AI-driven Predictive Maintenance & RUL Life Forecasting.
