@@ -159,6 +159,50 @@ def predict_rul():
         }), 500
 
 
+import threading
+from datetime import datetime
+
+FIREBASE_PROJECT_ID = os.environ.get("FIREBASE_PROJECT_ID", "apex-ml-4b1d9")
+
+def sync_device_to_firestore_rest(record: dict):
+    """Asynchronously syncs device telemetry & prediction to Firebase Firestore REST API."""
+    def _worker():
+        try:
+            device_id = record.get("device_id")
+            if not device_id:
+                return
+
+            telemetry = record.get("telemetry", {})
+            prediction = record.get("prediction", {})
+            ml_input = prediction.get("ml_input", {})
+
+            url = f"https://firestore.googleapis.com/v1/projects/{FIREBASE_PROJECT_ID}/databases/(default)/documents/devices/{device_id}"
+
+            payload = {
+                "fields": {
+                    "device_id": {"stringValue": str(device_id)},
+                    "device_name": {"stringValue": str(record.get("device_name") or "Enterprise Laptop")},
+                    "device_model": {"stringValue": str(record.get("device_model") or "Standard Model")},
+                    "manufacturer": {"stringValue": str(record.get("manufacturer") or "OEM")},
+                    "serial_number": {"stringValue": str(record.get("serial_number") or "N/A")},
+                    "ip_address": {"stringValue": str(record.get("ip_address") or telemetry.get("ip_address") or "127.0.0.1")},
+                    "status_level": {"stringValue": str(prediction.get("status_level") or "healthy")},
+                    "status_color": {"stringValue": str(prediction.get("status_color") or "#10B981")},
+                    "recommendation": {"stringValue": str(prediction.get("recommendation") or "Healthy Device")},
+                    "rul_months": {"doubleValue": float(prediction.get("rul_months") or 36.0)},
+                    "battery_health": {"doubleValue": float(ml_input.get("battery_health") or 100.0)},
+                    "ssd_health": {"doubleValue": float(ml_input.get("ssd_health") or 100.0)},
+                    "edhi": {"doubleValue": float(ml_input.get("edhi") or 85.0)},
+                    "last_seen": {"stringValue": str(record.get("last_seen") or datetime.now().isoformat())}
+                }
+            }
+            requests.patch(url, json=payload, timeout=5)
+        except Exception:
+            pass
+
+    threading.Thread(target=_worker, daemon=True).start()
+
+
 @app.route("/api/devices/telemetry", methods=["GET", "POST", "OPTIONS"])
 def receive_client_telemetry():
     """API endpoint for remote client agents running on enterprise laptops."""
@@ -181,6 +225,9 @@ def receive_client_telemetry():
 
         # Register/Update in Fleet Manager
         record = fleet_mgr.register_or_update(telemetry, prediction)
+
+        # Real-time sub-second sync to Firebase Firestore REST API
+        sync_device_to_firestore_rest(record)
 
         return jsonify({
             "status": "success",

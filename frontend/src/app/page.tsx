@@ -53,6 +53,7 @@ import {
   fetchMaintenanceLogs,
   syncDeviceToFirestore,
   fetchFirestoreDevices,
+  subscribeToFirestoreDevices,
   TelemetryHistoryRecord,
   MaintenanceLogRecord,
   FirestoreDeviceRecord
@@ -720,9 +721,16 @@ export default function DashboardPage() {
     }
   };
 
-  // Automated 5-Second Silent Real-Time Hardware Polling Across All Tabs
+  // Automated Real-Time Sub-Second Firestore Fleet Listener & 5-Second Telemetry Polling
   useEffect(() => {
     if (!currentUser) return;
+
+    // Sub-second real-time Firestore listener for instant device discovery
+    const unsubscribeDevices = subscribeToFirestoreDevices((devs) => {
+      if (Array.isArray(devs)) {
+        setFirestoreDevices(devs);
+      }
+    });
 
     fetchPrediction(true);
 
@@ -730,7 +738,12 @@ export default function DashboardPage() {
       fetchPrediction(false);
     }, 5000);
 
-    return () => clearInterval(intervalId);
+    return () => {
+      if (typeof unsubscribeDevices === "function") {
+        unsubscribeDevices();
+      }
+      clearInterval(intervalId);
+    };
   }, [currentUser, fetchPrediction]);
 
   // SVG Multi-Line Area Chart Renderer

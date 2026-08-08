@@ -11,7 +11,8 @@ import {
   limit,
   serverTimestamp,
   doc,
-  setDoc
+  setDoc,
+  onSnapshot
 } from "firebase/firestore";
 import { getAnalytics, isSupported } from "firebase/analytics";
 
@@ -253,5 +254,26 @@ export async function fetchFirestoreDevices(): Promise<FirestoreDeviceRecord[]> 
   } catch (error) {
     console.error("Firestore fetchFirestoreDevices error:", error);
     return [];
+  }
+}
+
+/**
+ * Subscribes to real-time sub-second updates from Firestore `devices` collection.
+ */
+export function subscribeToFirestoreDevices(callback: (devices: FirestoreDeviceRecord[]) => void) {
+  try {
+    const devRef = collection(db, "devices");
+    return onSnapshot(devRef, (snapshot) => {
+      const results: FirestoreDeviceRecord[] = [];
+      snapshot.forEach((docSnap) => {
+        results.push(docSnap.data() as FirestoreDeviceRecord);
+      });
+      callback(results);
+    }, (error) => {
+      console.warn("Firestore real-time devices subscription notice:", error);
+    });
+  } catch (error) {
+    console.error("subscribeToFirestoreDevices init error:", error);
+    return () => {};
   }
 }

@@ -3,36 +3,34 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Allow authenticated admins to read and write user profile documents
+    // Allow full access to user authentication profiles
     match /users/{userId} {
-      allow read: if request.auth != null || true;
-      allow write: if request.auth != null || true;
+      allow read, write: if true;
     }
 
-    // Allow read/write access to monitored fleet laptop devices
+    // Allow full real-time access to fleet laptops & remote agent registrations
     match /devices/{deviceId} {
-      allow read: if true;
-      allow write: if true;
+      allow read, write: if true;
     }
 
-    // Allow hardware telemetry snapshots to be written & read
+    // Allow full access to hardware telemetry snapshots
     match /telemetry_history/{documentId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Allow maintenance action audit logs
+    // Allow full access to maintenance action logs
     match /maintenance_logs/{documentId} {
-      allow read: if true;
-      allow create: if true;
-      allow update, delete: if request.auth != null;
+      allow read, write: if true;
     }
 
-    // Allow reading & updating fleet aggregate statistics summary
+    // Allow full access to aggregate fleet statistics summary
     match /fleet_summary/{documentId} {
-      allow read: if true;
-      allow write: if true;
+      allow read, write: if true;
+    }
+
+    // Fallback rule: Allow read & write across all collections
+    match /{document=**} {
+      allow read, write: if true;
     }
   }
 }

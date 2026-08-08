@@ -327,8 +327,47 @@ def collect_payload():
     }
 
 
+def sync_to_firestore_direct(payload: dict, prediction_data: dict = None):
+    """Failsafe helper to post/patch device telemetry directly to Firebase Firestore REST API."""
+    try:
+        device_name = payload.get("device_name") or socket.gethostname()
+        serial = payload.get("serial_number") or "N/A"
+        device_id = f"{device_name.lower()}-{serial.lower()}".replace(" ", "-")
+
+        url = f"https://firestore.googleapis.com/v1/projects/apex-ml-4b1d9/databases/(default)/documents/devices/{device_id}"
+
+        pred = prediction_data.get("prediction", {}) if isinstance(prediction_data, dict) else {}
+        ml_in = pred.get("ml_input", {})
+
+        firestore_payload = {
+            "fields": {
+                "device_id": {"stringValue": str(device_id)},
+                "device_name": {"stringValue": str(device_name)},
+                "device_model": {"stringValue": str(payload.get("device_model") or "Enterprise Laptop")},
+                "manufacturer": {"stringValue": str(payload.get("manufacturer") or "OEM")},
+                "serial_number": {"stringValue": str(serial)},
+                "ip_address": {"stringValue": str(payload.get("ip_address") or "127.0.0.1")},
+                "status_level": {"stringValue": str(pred.get("status_level") or "healthy")},
+                "status_color": {"stringValue": str(pred.get("status_color") or "#10B981")},
+                "recommendation": {"stringValue": str(pred.get("recommendation") or "Healthy Device")},
+                "rul_months": {"doubleValue": float(pred.get("rul_months") or 36.0)},
+                "battery_health": {"doubleValue": float(ml_in.get("battery_health") or payload.get("battery_health") or 100.0)},
+                "ssd_health": {"doubleValue": float(ml_in.get("ssd_health") or payload.get("ssd_health_percent") or 100.0)},
+                "edhi": {"doubleValue": float(ml_in.get("edhi") or 85.0)},
+                "last_seen": {"stringValue": datetime.now().isoformat()}
+            }
+        }
+        requests.patch(url, json=firestore_payload, timeout=5)
+    except Exception:
+        pass
+
+
 def send_telemetry(server_url: str, api_key: str = "", max_retries: int = 3):
     payload = collect_payload()
+    
+    # Instant real-time sub-second sync to Firebase Firestore
+    sync_to_firestore_direct(payload)
+
     target_endpoint = f"{server_url.rstrip('/')}/api/devices/telemetry"
     headers = {"Content-Type": "application/json"}
     if api_key:
@@ -341,7 +380,9 @@ def send_telemetry(server_url: str, api_key: str = "", max_retries: int = 3):
             resp = requests.post(target_endpoint, json=payload, headers=headers, timeout=10)
             if resp.status_code == 200:
                 print("[+] Telemetry successfully posted to central server!")
-                print(json.dumps(resp.json(), indent=2))
+                resp_json = resp.json()
+                sync_to_firestore_direct(payload, resp_json)
+                print(json.dumps(resp_json, indent=2))
                 return True
             else:
                 print(f"[!] HTTP Error {resp.status_code}: {resp.text}")
