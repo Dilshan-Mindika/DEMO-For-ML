@@ -351,17 +351,19 @@ export default function DashboardPage() {
       const saved = localStorage.getItem("apex_device_nicknames");
       if (saved) {
         try {
-          return JSON.parse(saved);
+          const parsed = JSON.parse(saved);
+          // Purge legacy demo nicknames if present
+          if (parsed["local"] === "Dilshan's Main Workstation") delete parsed["local"];
+          delete parsed["DESKTOP-K6S3QF9"];
+          delete parsed["DESKTOP-F5B57DN"];
+          localStorage.setItem("apex_device_nicknames", JSON.stringify(parsed));
+          return parsed;
         } catch {
           return {};
         }
       }
     }
-    return {
-      "local": "Dilshan's Main Workstation",
-      "DESKTOP-K6S3QF9": "Razer Blade 15 Pro",
-      "DESKTOP-F5B57DN": "Kasun's Dell XPS 9315"
-    };
+    return {};
   });
 
   // Live Telemetry Rolling Sparkline Buffer State
@@ -1864,7 +1866,7 @@ export default function DashboardPage() {
 
               <div className="flex-1 overflow-y-auto space-y-3.5 text-xs custom-scrollbar">
                 <p className="text-xs text-[var(--text-secondary)] mb-2">
-                  Set a custom name for this laptop (e.g. "Dilshan's Work Station", "CEO Executive XPS"). This name will persist across sessions and reports.
+                  Set a custom name for this laptop (e.g. "CEO Executive XPS", "HQ Finance Laptop"). This name will persist across sessions and reports.
                 </p>
 
                 <div className="mb-2">
@@ -1874,7 +1876,7 @@ export default function DashboardPage() {
                     autoFocus
                     value={nicknameInput}
                     onChange={(e) => setNicknameInput(e.target.value)}
-                    placeholder="e.g. Dilshan's Main Laptop"
+                    placeholder="e.g. Executive Workstation"
                     className="w-full bg-[var(--bg-input)] border border-[var(--border-input)] text-[var(--text-primary)] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-cyan-500 font-semibold"
                   />
                 </div>
