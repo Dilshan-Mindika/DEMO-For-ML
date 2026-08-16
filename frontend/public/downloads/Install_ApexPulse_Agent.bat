@@ -47,19 +47,30 @@ IF "%~1" NEQ "" (
 )
 
 echo [+] Central Server URL set to: %SERVER_URL%
-SET "REG_CMD=pythonw.exe "%TARGET_DIR%\client_agent.py" --server "%SERVER_URL%""
-REG ADD "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "ApexPulseAgent" /t REG_SZ /d "%REG_CMD%" /f >nul
 
-echo [+] Added to Windows Startup Registry (HKCU\...\Run\ApexPulseAgent).
+:: 5. Create Silent VBScript Background Runner (Zero CMD Pop-Up)
+SET "VBS_PATH=%TARGET_DIR%\run_agent.vbs"
+(
+    echo Set WshShell = CreateObject^("WScript.Shell"^)^
+    echo WshShell.Run "pythonw.exe """ ^& WshShell.ExpandEnvironmentStrings^("%APPDATA%"^)^ & "\ApexPulseAgent\client_agent.py"" --server ""%SERVER_URL%""", 0, False
+) > "%VBS_PATH%"
 
-:: 5. Launch Background Agent Immediately
-echo [+] Launching telemetry agent service now...
-start "" pythonw.exe "%TARGET_DIR%\client_agent.py" --server "%SERVER_URL%"
+echo [+] Created silent VBScript background launcher at: %VBS_PATH%
+
+:: 6. Register Silent VBScript Launcher in Windows Startup Registry
+REG ADD "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "ApexPulseAgent" /t REG_SZ /d "wscript.exe \"%VBS_PATH%\"" /f >nul
+
+echo [+] Registered in Windows Startup Registry (HKCU\...\Run\ApexPulseAgent).
+
+:: 7. Launch Background Agent Immediately & Auto-Close Installer Window
+echo [+] Launching telemetry agent service silently in background...
+start "" wscript.exe "%VBS_PATH%"
 
 echo.
 echo ============================================================
-echo   SUCCESS! ApexPulse Agent v1.1.2 is now running in the background.
-echo   It will automatically launch whenever this device starts up!
+echo   SUCCESS! ApexPulse Agent v1.1.2 installed successfully.
+echo   Running silently in background. This installer will close automatically.
 echo ============================================================
 echo.
-pause
+timeout /t 3 /nobreak >nul
+exit /b 0

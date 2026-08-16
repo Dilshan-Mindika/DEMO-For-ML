@@ -15,11 +15,28 @@ import platform
 import subprocess
 from datetime import datetime
 
+# Safe stdout/stderr redirection for windowed / background / GUI execution
+if sys.stdout is None:
+    sys.stdout = open(os.devnull, 'w')
+if sys.stderr is None:
+    sys.stderr = open(os.devnull, 'w')
+
+
+def safe_print(*args, **kwargs):
+    """Safely prints log messages without crashing windowless/GUI background execution."""
+    try:
+        if sys.stdout and not sys.stdout.closed:
+            print(*args, **kwargs)
+            sys.stdout.flush()
+    except Exception:
+        pass
+
+
 try:
     import psutil
     import requests
 except ImportError:
-    print("[!] Missing required Python libraries. Install with: pip install psutil requests wmi")
+    safe_print("[!] Missing required Python libraries. Install with: pip install psutil requests wmi")
     sys.exit(1)
 
 try:
@@ -373,21 +390,21 @@ def send_telemetry(server_url: str, api_key: str = "", max_retries: int = 3):
     if api_key:
         headers["X-API-Key"] = api_key
 
-    print(f"[+] Sending live hardware telemetry payload to: {target_endpoint}")
+    safe_print(f"[+] Sending live hardware telemetry payload to: {target_endpoint}")
 
     for attempt in range(1, max_retries + 1):
         try:
             resp = requests.post(target_endpoint, json=payload, headers=headers, timeout=10)
             if resp.status_code == 200:
-                print("[+] Telemetry successfully posted to central server!")
+                safe_print("[+] Telemetry successfully posted to central server!")
                 resp_json = resp.json()
                 sync_to_firestore_direct(payload, resp_json)
-                print(json.dumps(resp_json, indent=2))
+                safe_print(json.dumps(resp_json, indent=2))
                 return True
             else:
-                print(f"[!] HTTP Error {resp.status_code}: {resp.text}")
+                safe_print(f"[!] HTTP Error {resp.status_code}: {resp.text}")
         except Exception as e:
-            print(f"[!] Attempt {attempt}/{max_retries} failed to reach server: {e}")
+            safe_print(f"[!] Attempt {attempt}/{max_retries} failed to reach server: {e}")
             if attempt < max_retries:
                 time.sleep(2 * attempt)
     return False
@@ -401,7 +418,7 @@ def main():
     parser.add_argument("--once", action="store_true", help="Send single telemetry snapshot and exit")
     args = parser.parse_args()
 
-    print(f"[+] ApexPulse Agent active. Server: {args.server} (Interval: {args.interval}s)")
+    safe_print(f"[+] ApexPulse Agent active. Server: {args.server} (Interval: {args.interval}s)")
 
     if args.once:
         send_telemetry(args.server, api_key=args.api_key)
@@ -411,7 +428,7 @@ def main():
         try:
             send_telemetry(args.server, api_key=args.api_key)
         except Exception as err:
-            print(f"[!] Telemetry cycle error: {err}")
+            safe_print(f"[!] Telemetry cycle error: {err}")
         time.sleep(max(5, args.interval))
 
 
