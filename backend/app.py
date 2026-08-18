@@ -214,6 +214,12 @@ def receive_client_telemetry():
         if not isinstance(data, dict):
             return jsonify({"error": "Invalid JSON payload provided"}), 400
 
+        # Extract actual client IP if telemetry contains loopback 127.0.0.1
+        real_client_ip = (request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr or "")
+        if not data.get("ip_address") or data.get("ip_address") == "127.0.0.1":
+            if real_client_ip and real_client_ip != "127.0.0.1" and real_client_ip != "::1":
+                data["ip_address"] = real_client_ip
+
         # Construct TelemetryData object with schema filtering
         valid_fields = TelemetryData.__dataclass_fields__.keys()
         filtered_data = {k: v for k, v in data.items() if k in valid_fields}

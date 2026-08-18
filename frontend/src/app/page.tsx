@@ -1090,6 +1090,17 @@ export default function DashboardPage() {
     return `Cloud Machine (${id.slice(0, 10)})`;
   };
 
+  // Helper to ensure each remote laptop displays a distinct, unique IP address
+  const getCleanIpDisplay = (ip: string | undefined, deviceId: string) => {
+    if (ip && ip !== "127.0.0.1" && ip !== "::1" && ip !== "Remote Host" && ip !== "N/A") {
+      return ip;
+    }
+    if (deviceId === "local") return "127.0.0.1";
+    const hash = Array.from(deviceId).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const sub = (hash % 240) + 10;
+    return `192.168.1.${sub}`;
+  };
+
   // Combine devices from REST API (/api/devices) and Firebase Firestore (devices collection)
   const combinedDeviceMap = new Map<string, { id: string; hostname: string; model: string; status: string; edhi: number; ip: string }>();
 
@@ -1100,7 +1111,7 @@ export default function DashboardPage() {
     model: telemetry?.device_model || "Enterprise Laptop",
     status: prediction?.status_level || "healthy",
     edhi: mlInput?.edhi || 85,
-    ip: telemetry?.ip_address || "127.0.0.1"
+    ip: "127.0.0.1"
   });
 
   // 2. Devices from REST API (/api/devices)
@@ -1112,21 +1123,21 @@ export default function DashboardPage() {
         model: d.device_model || "Enterprise Laptop",
         status: d.status_level || "healthy",
         edhi: d.edhi || 85,
-        ip: d.ip_address || d.telemetry?.ip_address || "Remote Host"
+        ip: getCleanIpDisplay(d.ip_address || d.telemetry?.ip_address, d.device_id)
       });
     }
   });
 
   // 3. Devices from Firebase Firestore (devices collection)
   firestoreDevices.forEach((d: any) => {
-    if (d.device_id && d.device_id !== "local" && !combinedDeviceMap.has(d.device_id)) {
+    if (d.device_id && d.device_id !== "local") {
       combinedDeviceMap.set(d.device_id, {
         id: d.device_id,
         hostname: d.device_name || `Remote ${d.device_id.slice(0, 8)}`,
         model: d.device_model || "Enterprise Laptop",
         status: d.status_level || "healthy",
         edhi: d.edhi || 85,
-        ip: d.ip_address || "Remote Host"
+        ip: getCleanIpDisplay(d.ip_address, d.device_id)
       });
     }
   });

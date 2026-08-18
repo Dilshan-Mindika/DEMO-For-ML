@@ -45,18 +45,46 @@ except ImportError:
     wmi = None
 
 
-def get_device_info():
-    ip_addr = "127.0.0.1"
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip_addr = s.getsockname()[0]
-        s.close()
-    except Exception:
+def get_real_ip_address():
+    """Extracts the actual active IPv4 address across network adapters, excluding loopback."""
+    # Method 1: UDP Socket connection test to external DNS
+    for target in [("8.8.8.8", 80), ("1.1.1.1", 80)]:
         try:
-            ip_addr = socket.gethostbyname(socket.gethostname())
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(2.0)
+            s.connect(target)
+            ip = s.getsockname()[0]
+            s.close()
+            if ip and not ip.startswith("127."):
+                return ip
         except Exception:
-            ip_addr = "127.0.0.1"
+            pass
+
+    # Method 2: Iterate psutil network interface addresses
+    try:
+        ifaddrs = psutil.net_if_addrs()
+        for _interface_name, addresses in ifaddrs.items():
+            for addr in addresses:
+                if addr.family == socket.AF_INET:
+                    ip = addr.address
+                    if ip and not ip.startswith("127.") and not ip.startswith("169.254."):
+                        return ip
+    except Exception:
+        pass
+
+    # Method 3: Hostname DNS lookup
+    try:
+        ip = socket.gethostbyname(socket.gethostname())
+        if ip and not ip.startswith("127."):
+            return ip
+    except Exception:
+        pass
+
+    return "127.0.0.1"
+
+
+def get_device_info():
+    ip_addr = get_real_ip_address()
 
     info = {
         "device_name": socket.gethostname(),
