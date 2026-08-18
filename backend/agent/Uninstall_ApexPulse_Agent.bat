@@ -1,10 +1,10 @@
 @echo off
-TITLE ApexPulse Enterprise Client Agent - 1-Click Uninstaller
+TITLE ApexPulse Enterprise Client Agent v1.1.2 - 1-Click Uninstaller
 COLOR 0C
 CLS
 
 echo ============================================================
-echo   ApexPulse Enterprise Client Telemetry Agent Uninstaller
+echo   ApexPulse Enterprise Client Telemetry Agent Uninstaller v1.1.2
 echo   Removing ApexPulse background service and startup keys...
 echo ============================================================
 echo.
@@ -32,7 +32,7 @@ IF EXIST "%TARGET_DIR%" (
 
 echo.
 echo ============================================================
-echo   SUCCESS! ApexPulse Agent has been completely uninstalled.
+echo   SUCCESS! ApexPulse Agent v1.1.2 has been completely uninstalled.
 echo   No background telemetry service is running on this device.
 echo ============================================================
 echo.
