@@ -334,6 +334,18 @@ export default function DashboardPage() {
   const [lastUpdatedTime, setLastUpdatedTime] = useState<string>("");
   const [_error, setError] = useState<string | null>(null);
 
+  // Adjustable Real-time Telemetry Polling Interval State (Default: 5s)
+  const [pollingIntervalSec, setPollingIntervalSec] = useState<number>(() => {
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("apex_polling_interval");
+      if (saved) {
+        const val = parseInt(saved, 10);
+        if (!isNaN(val) && val >= 3) return val;
+      }
+    }
+    return 5;
+  });
+
   const [manualAge, _setManualAge] = useState<number>(24);
   const [dailyUsage, _setDailyUsage] = useState<number>(6.5);
   const [selectedDeviceId, setSelectedDeviceId] = useState<string>("local");
@@ -369,15 +381,7 @@ export default function DashboardPage() {
   // Live Telemetry Rolling Sparkline Buffer State
   const [telemetryHistoryBuffer, setTelemetryHistoryBuffer] = useState<
     { time: string; cpu: number; ram: number; disk: number; temp: number }[]
-  >([
-    { time: "12:00", cpu: 18, ram: 52, disk: 58, temp: 42 },
-    { time: "12:01", cpu: 28, ram: 54, disk: 58, temp: 44 },
-    { time: "12:02", cpu: 22, ram: 55, disk: 59, temp: 43 },
-    { time: "12:03", cpu: 35, ram: 56, disk: 59, temp: 47 },
-    { time: "12:04", cpu: 19, ram: 56, disk: 59, temp: 45 },
-    { time: "12:05", cpu: 42, ram: 57, disk: 59, temp: 51 },
-    { time: "12:06", cpu: 26, ram: 56, disk: 59, temp: 46 }
-  ]);
+  >([]);
 
   // What-If Interactive Sensitivity State
   const [simAge, setSimAge] = useState<number>(24);
@@ -573,6 +577,77 @@ export default function DashboardPage() {
   const fetchPrediction = useCallback(async (showSpinner = false, age = manualAge, usage = dailyUsage) => {
     if (showSpinner) setLoading(true);
     setError(null);
+
+    // 1. Immediately check Firestore real-time data for selected device if not "local"
+    let matchedDoc: any = null;
+    if (selectedDeviceId !== "local" && Array.isArray(firestoreDevices) && firestoreDevices.length > 0) {
+      matchedDoc = firestoreDevices.find((d: any) => d.device_id === selectedDeviceId);
+    }
+
+    if (matchedDoc) {
+      const constructedTelemetry: TelemetryData = {
+        device_name: matchedDoc.device_name || "Enterprise Laptop",
+        device_model: matchedDoc.device_model || "Standard Model",
+        os_name: matchedDoc.os_name || "Windows",
+        os_version: matchedDoc.os_version || "11",
+        manufacturer: matchedDoc.manufacturer || "OEM",
+        serial_number: matchedDoc.serial_number || "N/A",
+        ip_address: matchedDoc.ip_address || "127.0.0.1",
+        cpu_usage: matchedDoc.cpu_usage ?? 25,
+        ram_usage: matchedDoc.ram_usage ?? 55,
+        disk_usage: matchedDoc.disk_usage ?? 45,
+        battery_percent: matchedDoc.battery_percent ?? 90,
+        power_plugged: matchedDoc.power_plugged ?? true,
+        design_capacity_mwh: matchedDoc.design_capacity_mwh ?? 50000,
+        full_charge_capacity_mwh: matchedDoc.full_charge_capacity_mwh ?? 45000,
+        battery_health: matchedDoc.battery_health ?? 90,
+        battery_wear: matchedDoc.battery_wear ?? 10,
+        battery_cycles: matchedDoc.battery_cycles ?? 100,
+        temperature_current: matchedDoc.temperature_current ?? 45,
+        temperature_avg: matchedDoc.temperature_avg ?? 45,
+        ssd_health_percent: matchedDoc.ssd_health ?? 100,
+        uptime_hours: matchedDoc.uptime_hours ?? 10,
+        shutdowns_30d: matchedDoc.shutdowns_30d ?? 0,
+        timestamp: matchedDoc.last_seen || new Date().toISOString()
+      };
+
+      const constructedPrediction: PredictionResult = {
+        rul_months: matchedDoc.rul_months ?? 36.0,
+        recommendation: matchedDoc.recommendation || "Healthy Device",
+        status_level: matchedDoc.status_level || "healthy",
+        status_color: matchedDoc.status_color || "#10B981",
+        ml_input: {
+          device_model: matchedDoc.device_model || "Standard Model",
+          usage_profile: "Normal",
+          age: age,
+          usage_hours: age * 30 * usage,
+          battery_cycles: matchedDoc.battery_cycles ?? 100,
+          battery_health: matchedDoc.battery_health ?? 90,
+          ssd_health: matchedDoc.ssd_health ?? 100,
+          temperature: matchedDoc.temperature_current ?? 45,
+          performance_score: 85,
+          shutdown_count: matchedDoc.shutdowns_30d ?? 0,
+          edhi: matchedDoc.edhi ?? 85
+        },
+        timestamp: matchedDoc.last_seen || new Date().toISOString()
+      };
+
+      setData({ telemetry: constructedTelemetry, prediction: constructedPrediction });
+      setLastUpdatedTime(new Date().toLocaleTimeString());
+
+      setTelemetryHistoryBuffer((prev) => {
+        const newPt = {
+          time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+          cpu: constructedTelemetry.cpu_usage,
+          ram: constructedTelemetry.ram_usage,
+          disk: constructedTelemetry.disk_usage,
+          temp: constructedTelemetry.temperature_current,
+        };
+        const updated = [...prev, newPt];
+        return updated.slice(-12);
+      });
+    }
+
     try {
       let path = "/api/predict";
       let options: RequestInit = {
@@ -588,43 +663,40 @@ export default function DashboardPage() {
 
       const res = await safeFetchApi(path, options);
       const json = await res.json();
-      if (json.error) throw new Error(json.error);
+      if (json && !json.error && json.prediction) {
+        setData({ telemetry: json.telemetry, prediction: json.prediction });
+        setLastUpdatedTime(new Date().toLocaleTimeString());
 
-      setData({ telemetry: json.telemetry, prediction: json.prediction });
-      setLastUpdatedTime(new Date().toLocaleTimeString());
+        if (json.prediction.ml_input) {
+          const ml = json.prediction.ml_input;
+          setSimAge(ml.age);
+          setSimCycles(ml.battery_cycles);
+          setSimBatHealth(ml.battery_health);
+          setSimSSDHealth(ml.ssd_health);
+        }
 
-      if (json.prediction.ml_input) {
-        const ml = json.prediction.ml_input;
-        setSimAge(ml.age);
-        setSimCycles(ml.battery_cycles);
-        setSimBatHealth(ml.battery_health);
-        setSimSSDHealth(ml.ssd_health);
+        if (json.telemetry) {
+          setTelemetryHistoryBuffer((prev) => {
+            const newPt = {
+              time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+              cpu: json.telemetry.cpu_usage ?? 25,
+              ram: json.telemetry.ram_usage ?? 55,
+              disk: json.telemetry.disk_usage ?? 50,
+              temp: json.telemetry.temperature_current ?? 45,
+            };
+            const updated = [...prev, newPt];
+            return updated.slice(-12);
+          });
+        }
+
+        saveDeviceTelemetryHistory(selectedDeviceId, json.telemetry, json.prediction);
       }
-
-      if (json.telemetry) {
-        setTelemetryHistoryBuffer((prev) => {
-          const newPt = {
-            time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
-            cpu: json.telemetry.cpu_usage ?? 25,
-            ram: json.telemetry.ram_usage ?? 55,
-            disk: json.telemetry.disk_usage ?? 50,
-            temp: json.telemetry.temperature_current ?? 45,
-          };
-          const updated = [...prev, newPt];
-          return updated.slice(-12);
-        });
-      }
-
-      saveDeviceTelemetryHistory(selectedDeviceId, json.telemetry, json.prediction);
-
-      fetchFleet();
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Unable to connect to laptop monitoring server.";
-      setError(msg);
+    } catch (_err) {
+      // If REST API fails (e.g. serverless restart), Firestore data already set data above
     } finally {
       if (showSpinner) setLoading(false);
     }
-  }, [manualAge, dailyUsage, selectedDeviceId, fetchFleet, safeFetchApi]);
+  }, [manualAge, dailyUsage, selectedDeviceId, firestoreDevices, safeFetchApi]);
 
   const loadFirestoreData = useCallback(async () => {
     setLoadingFirestore(true);
@@ -736,9 +808,10 @@ export default function DashboardPage() {
 
     fetchPrediction(true);
 
+    const intervalMs = pollingIntervalSec * 1000;
     const intervalId = setInterval(() => {
       fetchPrediction(false);
-    }, 5000);
+    }, intervalMs);
 
     return () => {
       if (typeof unsubscribeDevices === "function") {
@@ -746,7 +819,7 @@ export default function DashboardPage() {
       }
       clearInterval(intervalId);
     };
-  }, [currentUser, fetchPrediction]);
+  }, [currentUser, fetchPrediction, pollingIntervalSec]);
 
   // SVG Multi-Line Area Chart Renderer
   const renderSparklineChart = (
@@ -1541,6 +1614,34 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Real-time Polling Interval Control */}
+            <div className="bg-[var(--bg-input)] hover:bg-[var(--bg-card)] border border-[var(--border-input)] hover:border-cyan-500/50 rounded-full px-3.5 py-2 shadow-lg backdrop-blur-md flex items-center justify-between sm:justify-start gap-2 text-xs transition-all">
+              <div className="flex items-center gap-1.5">
+                <Clock className="w-3.5 h-3.5 text-cyan-400 flex-shrink-0" />
+                <span className="text-[11px] font-semibold text-[var(--text-secondary)] hidden sm:inline">Sync Rate:</span>
+              </div>
+              <select
+                value={pollingIntervalSec}
+                onChange={(e) => {
+                  const newSec = Number(e.target.value);
+                  setPollingIntervalSec(newSec);
+                  if (typeof window !== "undefined") {
+                    localStorage.setItem("apex_polling_interval", String(newSec));
+                  }
+                }}
+                className="bg-transparent text-xs font-bold text-cyan-400 focus:outline-none cursor-pointer"
+                title="Change Real-time Telemetry Refresh Rate"
+              >
+                <option value={3} className="bg-[#0B132B] text-white">3 sec (Ultra)</option>
+                <option value={5} className="bg-[#0B132B] text-white">5 sec (Default)</option>
+                <option value={7} className="bg-[#0B132B] text-white">7 sec (Fast)</option>
+                <option value={10} className="bg-[#0B132B] text-white">10 sec (Normal)</option>
+                <option value={30} className="bg-[#0B132B] text-white">30 sec (Economy)</option>
+                <option value={60} className="bg-[#0B132B] text-white">1 min</option>
+                <option value={300} className="bg-[#0B132B] text-white">5 min</option>
+              </select>
             </div>
 
             <button
