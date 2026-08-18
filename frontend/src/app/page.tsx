@@ -585,14 +585,9 @@ export default function DashboardPage() {
     }
 
     if (matchedDoc) {
-      // Dynamic live sensor fluctuations for streaming active telemetry
-      const baseCpu = matchedDoc.cpu_usage ?? 25;
-      const baseRam = matchedDoc.ram_usage ?? 55;
-      const baseTemp = matchedDoc.temperature_current ?? 45;
-
-      const dynamicCpu = Number(Math.min(100, Math.max(5, baseCpu + (Math.random() * 6 - 3))).toFixed(1));
-      const dynamicRam = Number(Math.min(100, Math.max(10, baseRam + (Math.random() * 2 - 1))).toFixed(1));
-      const dynamicTemp = Number(Math.min(95, Math.max(30, baseTemp + (Math.random() * 1.6 - 0.8))).toFixed(1));
+      const trueCpu = matchedDoc.cpu_usage ?? 25;
+      const trueRam = matchedDoc.ram_usage ?? 55;
+      const trueTemp = matchedDoc.temperature_current ?? 45;
 
       const constructedTelemetry: TelemetryData = {
         device_name: matchedDoc.device_name || "Enterprise Laptop",
@@ -602,8 +597,8 @@ export default function DashboardPage() {
         manufacturer: matchedDoc.manufacturer || "OEM",
         serial_number: matchedDoc.serial_number || "N/A",
         ip_address: matchedDoc.ip_address || "127.0.0.1",
-        cpu_usage: dynamicCpu,
-        ram_usage: dynamicRam,
+        cpu_usage: trueCpu,
+        ram_usage: trueRam,
         disk_usage: matchedDoc.disk_usage ?? 45,
         battery_percent: matchedDoc.battery_percent ?? 90,
         power_plugged: matchedDoc.power_plugged ?? true,
@@ -612,12 +607,12 @@ export default function DashboardPage() {
         battery_health: matchedDoc.battery_health ?? 90,
         battery_wear: matchedDoc.battery_wear ?? 10,
         battery_cycles: matchedDoc.battery_cycles ?? 100,
-        temperature_current: dynamicTemp,
+        temperature_current: trueTemp,
         temperature_avg: matchedDoc.temperature_avg ?? 45,
         ssd_health_percent: matchedDoc.ssd_health ?? 100,
         uptime_hours: matchedDoc.uptime_hours ?? 10,
         shutdowns_30d: matchedDoc.shutdowns_30d ?? 0,
-        timestamp: new Date().toISOString()
+        timestamp: matchedDoc.last_seen || new Date().toISOString()
       };
 
       const constructedPrediction: PredictionResult = {
