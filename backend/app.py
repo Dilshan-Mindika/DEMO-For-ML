@@ -1,6 +1,7 @@
 import os
 import sys
 import warnings
+import requests
 
 # Suppress non-critical library warnings
 warnings.filterwarnings("ignore")
@@ -99,6 +100,7 @@ def index_root():
 
 
 @app.route("/api/health", methods=["GET"])
+@app.route("/health", methods=["GET"])
 def health_check():
     return jsonify({
         "status": "online",
@@ -111,6 +113,7 @@ def health_check():
 
 
 @app.route("/api/predict", methods=["POST", "GET"])
+@app.route("/predict", methods=["POST", "GET"])
 def predict_rul():
     try:
         params = request.get_json(silent=True)
@@ -203,7 +206,12 @@ def sync_device_to_firestore_rest(record: dict):
     threading.Thread(target=_worker, daemon=True).start()
 
 
+app.url_map.strict_slashes = False
+
 @app.route("/api/devices/telemetry", methods=["GET", "POST", "OPTIONS"])
+@app.route("/api/devices/telemetry/", methods=["GET", "POST", "OPTIONS"])
+@app.route("/devices/telemetry", methods=["GET", "POST", "OPTIONS"])
+@app.route("/devices/telemetry/", methods=["GET", "POST", "OPTIONS"])
 def receive_client_telemetry():
     """API endpoint for remote client agents running on enterprise laptops."""
     try:
